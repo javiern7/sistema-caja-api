@@ -1,3 +1,0 @@
--- Base tecnica inicial del backend.
--- Las migraciones funcionales de dominio se agregaran por modulo
--- conforme avancen auth, contexto operativo, catalogos, caja y ventas.
