@@ -10,7 +10,7 @@ Esta base ya deja preparado:
 - seguridad stateless con JWT
 - autenticación persistente en base de datos
 - seed automático de permisos, roles y usuarios base
-- endpoints base de `auth`, `usuarios`, `roles`, `contextos-operativos` y `negocios-eventos`
+- endpoints base de `auth`, `usuarios`, `roles`, `contextos-operativos`, `negocios-eventos`, `productos` y `proveedores`
 - respuesta y error estándar para API
 - endpoint técnico de salud
 - configuración de perfiles y carga de migraciones desde `database/`
@@ -32,6 +32,13 @@ Esta base ya deja preparado:
 - `GET /api/v1/roles`
 - `POST /api/v1/roles`
 - `PUT /api/v1/roles/{roleId}/permisos`
+- `GET /api/v1/productos`
+- `POST /api/v1/productos`
+- `PUT /api/v1/productos/{productId}`
+- `PATCH /api/v1/productos/{productId}/estado`
+- `GET /api/v1/proveedores`
+- `POST /api/v1/proveedores`
+- `PUT /api/v1/proveedores/{providerId}`
 
 ## Entorno local
 
@@ -45,7 +52,7 @@ Esta base ya deja preparado:
 - `admin` / `Admin123*`
 - `cajero` / `Cajero123*`
 
-Estos usuarios ya no dependen de YAML: se crean automáticamente en base de datos si el esquema está vacío.
+Estos usuarios se crean automáticamente en base de datos si el esquema está vacío.
 
 ## Estructura
 

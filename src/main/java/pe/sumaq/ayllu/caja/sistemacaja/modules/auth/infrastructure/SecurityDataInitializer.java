@@ -37,6 +37,8 @@ public class SecurityDataInitializer {
                     Map.entry("usuario.gestionar", "Gestion de usuarios"),
                     Map.entry("rol.gestionar", "Gestion de roles y permisos"),
                     Map.entry("negocioevento.gestionar", "Gestion de negocios y eventos"),
+                    Map.entry("producto.gestionar", "Gestion de productos"),
+                    Map.entry("proveedor.gestionar", "Gestion de proveedores"),
                     Map.entry("venta.registrar", "Registro de ventas"),
                     Map.entry("venta.anular", "Anulacion de ventas"),
                     Map.entry("compra.registrar", "Registro de compras"),
