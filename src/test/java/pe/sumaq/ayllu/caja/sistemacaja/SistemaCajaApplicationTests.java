@@ -1,17 +1,29 @@
 package pe.sumaq.ayllu.caja.sistemacaja;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.JpaOperationalContextRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaPermissionRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaRoleRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.PermissionEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.RoleEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,7 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.autoconfigure.exclude="
                 + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
                 + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
-                + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
+                + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration",
+        "app.security.seed.enabled=false"
 })
 @AutoConfigureMockMvc
 class SistemaCajaApplicationTests {
@@ -29,6 +42,15 @@ class SistemaCajaApplicationTests {
 
     @MockBean
     private JpaOperationalContextRepository jpaOperationalContextRepository;
+
+    @MockBean
+    private JpaUserRepository jpaUserRepository;
+
+    @MockBean
+    private JpaRoleRepository jpaRoleRepository;
+
+    @MockBean
+    private JpaPermissionRepository jpaPermissionRepository;
 
     @Test
     void contextLoads() {
@@ -59,7 +81,9 @@ class SistemaCajaApplicationTests {
     }
 
     @Test
-    void loginShouldReturnTokenForBootstrapAdmin() throws Exception {
+    void loginShouldReturnTokenForAdminFromPersistentUserStore() throws Exception {
+        when(jpaUserRepository.findByUsername("admin")).thenReturn(Optional.of(buildAdminUser()));
+
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -72,6 +96,31 @@ class SistemaCajaApplicationTests {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").isNotEmpty())
                 .andExpect(jsonPath("$.data.user.username").value("admin"))
+                .andExpect(jsonPath("$.data.user.role").value("ADMIN"))
                 .andExpect(jsonPath("$.data.permissions").isArray());
+    }
+
+    private UserEntity buildAdminUser() {
+        PermissionEntity usersPermission = new PermissionEntity();
+        usersPermission.setCode("usuario.gestionar");
+        usersPermission.setDescription("Gestion de usuarios");
+
+        PermissionEntity rolesPermission = new PermissionEntity();
+        rolesPermission.setCode("rol.gestionar");
+        rolesPermission.setDescription("Gestion de roles");
+
+        RoleEntity roleEntity = new RoleEntity();
+        roleEntity.setId(1L);
+        roleEntity.setName("ADMIN");
+        roleEntity.setDescription("Administrador");
+        roleEntity.setPermissions(new LinkedHashSet<>(List.of(usersPermission, rolesPermission)));
+
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(1L);
+        userEntity.setUsername("admin");
+        userEntity.setPasswordHash(new BCryptPasswordEncoder().encode("Admin123*"));
+        userEntity.setActive(true);
+        userEntity.setRole(roleEntity);
+        return userEntity;
     }
 }

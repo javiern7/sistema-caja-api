@@ -11,7 +11,3 @@ spring:
     enabled: true
 server:
   port: 8080
-
-app:
-  security:
-    bootstrap-users: []

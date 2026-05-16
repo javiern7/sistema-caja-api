@@ -8,8 +8,9 @@ Esta base ya deja preparado:
 
 - estructura modular backend por dominio
 - seguridad stateless con JWT
-- endpoints iniciales de `auth`
-- endpoints base de `contextos-operativos` y `negocios-eventos`
+- autenticación persistente en base de datos
+- seed automático de permisos, roles y usuarios base
+- endpoints base de `auth`, `usuarios`, `roles`, `contextos-operativos` y `negocios-eventos`
 - respuesta y error estándar para API
 - endpoint técnico de salud
 - configuración de perfiles y carga de migraciones desde `database/`
@@ -24,6 +25,13 @@ Esta base ya deja preparado:
 - `GET /api/v1/negocios-eventos`
 - `POST /api/v1/negocios-eventos`
 - `PUT /api/v1/negocios-eventos/{operationalContextId}`
+- `GET /api/v1/usuarios`
+- `POST /api/v1/usuarios`
+- `PUT /api/v1/usuarios/{userId}`
+- `PATCH /api/v1/usuarios/{userId}/estado`
+- `GET /api/v1/roles`
+- `POST /api/v1/roles`
+- `PUT /api/v1/roles/{roleId}/permisos`
 
 ## Entorno local
 
@@ -32,12 +40,12 @@ Esta base ya deja preparado:
 - usuario: `cajaapi`
 - password: `cajaapi`
 
-## Usuarios bootstrap para entorno local
+## Usuarios seed para entorno local
 
 - `admin` / `Admin123*`
 - `cajero` / `Cajero123*`
 
-Estos usuarios existen como base temporal para el arranque técnico de seguridad.
+Estos usuarios ya no dependen de YAML: se crean automáticamente en base de datos si el esquema está vacío.
 
 ## Estructura
 

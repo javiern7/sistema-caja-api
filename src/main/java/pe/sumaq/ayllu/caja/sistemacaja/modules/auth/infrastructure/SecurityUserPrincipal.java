@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.domain.AuthenticatedUser;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 
 public class SecurityUserPrincipal implements UserDetails {
 
@@ -44,6 +45,21 @@ public class SecurityUserPrincipal implements UserDetails {
             List<String> permissions
     ) {
         return new SecurityUserPrincipal(id, username, "", role, active, permissions);
+    }
+
+    public static SecurityUserPrincipal fromEntity(UserEntity userEntity) {
+        List<String> permissions = userEntity.getRole().getPermissions().stream()
+                .map(permission -> permission.getCode())
+                .toList();
+
+        return new SecurityUserPrincipal(
+                userEntity.getId(),
+                userEntity.getUsername(),
+                userEntity.getPasswordHash(),
+                userEntity.getRole().getName(),
+                userEntity.isActive(),
+                permissions
+        );
     }
 
     public AuthenticatedUser toAuthenticatedUser() {
