@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db-host:5432/sistema_caja
+    username: app_user
+    password: change_me
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+server:
+  port: 8080
+
+app:
+  security:
+    bootstrap-users: []
