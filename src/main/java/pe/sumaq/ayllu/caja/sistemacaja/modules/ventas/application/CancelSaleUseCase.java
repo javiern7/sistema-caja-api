@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.application.AuditRegistrar;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashMovementType;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.CashMovementEntity;
@@ -38,6 +39,7 @@ public class CancelSaleUseCase {
     private final JpaStockMovementRepository jpaStockMovementRepository;
     private final JpaCashMovementRepository jpaCashMovementRepository;
     private final SaleMapper saleMapper;
+    private final AuditRegistrar auditRegistrar;
 
     public CancelSaleUseCase(
             JpaSaleRepository jpaSaleRepository,
@@ -45,7 +47,8 @@ public class CancelSaleUseCase {
             JpaStockCurrentRepository jpaStockCurrentRepository,
             JpaStockMovementRepository jpaStockMovementRepository,
             JpaCashMovementRepository jpaCashMovementRepository,
-            SaleMapper saleMapper
+            SaleMapper saleMapper,
+            AuditRegistrar auditRegistrar
     ) {
         this.jpaSaleRepository = jpaSaleRepository;
         this.jpaUserRepository = jpaUserRepository;
@@ -53,6 +56,7 @@ public class CancelSaleUseCase {
         this.jpaStockMovementRepository = jpaStockMovementRepository;
         this.jpaCashMovementRepository = jpaCashMovementRepository;
         this.saleMapper = saleMapper;
+        this.auditRegistrar = auditRegistrar;
     }
 
     @Transactional
@@ -131,6 +135,14 @@ public class CancelSaleUseCase {
         jpaStockCurrentRepository.saveAll(stockUpdates);
         jpaStockMovementRepository.saveAll(stockMovements);
         jpaCashMovementRepository.saveAll(cashMovements);
+        auditRegistrar.record(
+                "VENTA",
+                "ANULACION",
+                "sale",
+                saleEntity.getId().toString(),
+                principal.getUsername(),
+                request.reason()
+        );
 
         return saleMapper.toResponse(jpaSaleRepository.save(saleEntity));
     }

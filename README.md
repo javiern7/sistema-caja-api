@@ -16,6 +16,7 @@ Esta base ya deja preparado:
 - registro, consulta, listado y anulacion de `ventas`
 - registro, consulta, listado y anulacion de `compras`
 - registro y consulta de `egresos`
+- consulta de `auditoria` operativa y listado administrativo de `cajas`
 - respuesta y error estándar para API
 - endpoint técnico de salud
 - configuración de perfiles y carga de migraciones desde `database/`
@@ -61,6 +62,8 @@ Esta base ya deja preparado:
 - `POST /api/v1/egresos`
 - `GET /api/v1/egresos`
 - `GET /api/v1/egresos/{egresoId}`
+- `GET /api/v1/cajas`
+- `GET /api/v1/auditoria/operaciones`
 
 ## Alcance ya revisable por Swagger o Postman
 
@@ -73,8 +76,9 @@ En este punto ya puedes revisar de forma funcional:
 - Fase 4 completa: stock base y flujo de caja con apertura, consulta y cierre
 - Fase 5 base: ventas con detalle, pagos, comprobante interno y anulacion
 - Fase 6 base: compras con impacto en stock y egresos administrativos o de caja
+- Fase 7 base: auditoria operativa minima y consulta administrativa de cajas
 
-Todavía no está lista para prueba funcional completa la parte de auditoría y reportes.
+Todavía no está lista para prueba funcional completa la parte de reportes.
 
 ## Entorno local
 

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.application.AuditRegistrar;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashMovementType;
@@ -29,17 +30,20 @@ public class CloseCashBoxUseCase {
     private final JpaCashMovementRepository jpaCashMovementRepository;
     private final JpaUserRepository jpaUserRepository;
     private final CashBoxMapper cashBoxMapper;
+    private final AuditRegistrar auditRegistrar;
 
     public CloseCashBoxUseCase(
             JpaCashBoxRepository jpaCashBoxRepository,
             JpaCashMovementRepository jpaCashMovementRepository,
             JpaUserRepository jpaUserRepository,
-            CashBoxMapper cashBoxMapper
+            CashBoxMapper cashBoxMapper,
+            AuditRegistrar auditRegistrar
     ) {
         this.jpaCashBoxRepository = jpaCashBoxRepository;
         this.jpaCashMovementRepository = jpaCashMovementRepository;
         this.jpaUserRepository = jpaUserRepository;
         this.cashBoxMapper = cashBoxMapper;
+        this.auditRegistrar = auditRegistrar;
     }
 
     @Transactional
@@ -109,6 +113,14 @@ public class CloseCashBoxUseCase {
         movementEntity.setObservation(request.observation());
         jpaCashMovementRepository.save(movementEntity);
         movements.add(movementEntity);
+        auditRegistrar.record(
+                "CAJA",
+                "CIERRE",
+                "cash_box",
+                savedCashBox.getId().toString(),
+                principal.getUsername(),
+                "Cierre de caja con diferencia " + differenceAmount
+        );
 
         return cashBoxMapper.toDetailResponse(savedCashBox, movements);
     }

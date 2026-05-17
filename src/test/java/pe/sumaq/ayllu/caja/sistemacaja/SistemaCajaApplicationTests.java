@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.JpaOperationalContextRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashMovementRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.JpaAuditOperationRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.JpaExpenseRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
@@ -88,6 +89,9 @@ class SistemaCajaApplicationTests {
     @MockBean
     private JpaExpenseRepository jpaExpenseRepository;
 
+    @MockBean
+    private JpaAuditOperationRepository jpaAuditOperationRepository;
+
     @Test
     void contextLoads() {
     }
@@ -151,6 +155,14 @@ class SistemaCajaApplicationTests {
     @Test
     void expenseDetailEndpointShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/egresos/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void auditOperationsEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/auditoria/operaciones"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));

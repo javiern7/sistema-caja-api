@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.application.AuditRegistrar;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashMovementType;
@@ -34,6 +35,7 @@ public class CreateExpenseUseCase {
     private final JpaCashMovementRepository jpaCashMovementRepository;
     private final JpaUserRepository jpaUserRepository;
     private final ExpenseMapper expenseMapper;
+    private final AuditRegistrar auditRegistrar;
 
     public CreateExpenseUseCase(
             JpaExpenseRepository jpaExpenseRepository,
@@ -41,7 +43,8 @@ public class CreateExpenseUseCase {
             JpaCashBoxRepository jpaCashBoxRepository,
             JpaCashMovementRepository jpaCashMovementRepository,
             JpaUserRepository jpaUserRepository,
-            ExpenseMapper expenseMapper
+            ExpenseMapper expenseMapper,
+            AuditRegistrar auditRegistrar
     ) {
         this.jpaExpenseRepository = jpaExpenseRepository;
         this.jpaOperationalContextRepository = jpaOperationalContextRepository;
@@ -49,6 +52,7 @@ public class CreateExpenseUseCase {
         this.jpaCashMovementRepository = jpaCashMovementRepository;
         this.jpaUserRepository = jpaUserRepository;
         this.expenseMapper = expenseMapper;
+        this.auditRegistrar = auditRegistrar;
     }
 
     @Transactional
@@ -121,6 +125,14 @@ public class CreateExpenseUseCase {
             cashMovement.setObservation(request.description());
             jpaCashMovementRepository.save(cashMovement);
         }
+        auditRegistrar.record(
+                "EGRESO",
+                "REGISTRO",
+                "expense",
+                savedExpense.getId().toString(),
+                principal.getUsername(),
+                request.expenseType() + " - " + request.description()
+        );
 
         return expenseMapper.toResponse(savedExpense);
     }

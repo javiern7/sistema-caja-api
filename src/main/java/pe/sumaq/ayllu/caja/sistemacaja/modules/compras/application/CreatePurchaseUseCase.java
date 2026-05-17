@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.application.AuditRegistrar;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.domain.PurchaseStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
@@ -45,6 +46,7 @@ public class CreatePurchaseUseCase {
     private final JpaStockMovementRepository jpaStockMovementRepository;
     private final JpaUserRepository jpaUserRepository;
     private final PurchaseMapper purchaseMapper;
+    private final AuditRegistrar auditRegistrar;
 
     public CreatePurchaseUseCase(
             JpaPurchaseRepository jpaPurchaseRepository,
@@ -54,7 +56,8 @@ public class CreatePurchaseUseCase {
             JpaStockCurrentRepository jpaStockCurrentRepository,
             JpaStockMovementRepository jpaStockMovementRepository,
             JpaUserRepository jpaUserRepository,
-            PurchaseMapper purchaseMapper
+            PurchaseMapper purchaseMapper,
+            AuditRegistrar auditRegistrar
     ) {
         this.jpaPurchaseRepository = jpaPurchaseRepository;
         this.jpaOperationalContextRepository = jpaOperationalContextRepository;
@@ -64,6 +67,7 @@ public class CreatePurchaseUseCase {
         this.jpaStockMovementRepository = jpaStockMovementRepository;
         this.jpaUserRepository = jpaUserRepository;
         this.purchaseMapper = purchaseMapper;
+        this.auditRegistrar = auditRegistrar;
     }
 
     @Transactional
@@ -180,6 +184,14 @@ public class CreatePurchaseUseCase {
                 jpaStockMovementRepository.save(movement);
             }
         }
+        auditRegistrar.record(
+                "COMPRA",
+                "REGISTRO",
+                "purchase",
+                savedPurchase.getId().toString(),
+                principal.getUsername(),
+                "Compra registrada por total " + savedPurchase.getTotalAmount()
+        );
 
         return purchaseMapper.toResponse(savedPurchase);
     }

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.application.AuditRegistrar;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashMovementType;
@@ -32,19 +33,22 @@ public class OpenCashBoxUseCase {
     private final JpaOperationalContextRepository jpaOperationalContextRepository;
     private final JpaUserRepository jpaUserRepository;
     private final CashBoxMapper cashBoxMapper;
+    private final AuditRegistrar auditRegistrar;
 
     public OpenCashBoxUseCase(
             JpaCashBoxRepository jpaCashBoxRepository,
             JpaCashMovementRepository jpaCashMovementRepository,
             JpaOperationalContextRepository jpaOperationalContextRepository,
             JpaUserRepository jpaUserRepository,
-            CashBoxMapper cashBoxMapper
+            CashBoxMapper cashBoxMapper,
+            AuditRegistrar auditRegistrar
     ) {
         this.jpaCashBoxRepository = jpaCashBoxRepository;
         this.jpaCashMovementRepository = jpaCashMovementRepository;
         this.jpaOperationalContextRepository = jpaOperationalContextRepository;
         this.jpaUserRepository = jpaUserRepository;
         this.cashBoxMapper = cashBoxMapper;
+        this.auditRegistrar = auditRegistrar;
     }
 
     @Transactional
@@ -110,6 +114,14 @@ public class OpenCashBoxUseCase {
         movementEntity.setOccurredAt(LocalDateTime.now());
         movementEntity.setObservation(request.observation());
         jpaCashMovementRepository.save(movementEntity);
+        auditRegistrar.record(
+                "CAJA",
+                "APERTURA",
+                "cash_box",
+                savedCashBox.getId().toString(),
+                principal.getUsername(),
+                "Apertura de caja en contexto " + operationalContext.getCode()
+        );
 
         return cashBoxMapper.toDetailResponse(
                 savedCashBox,

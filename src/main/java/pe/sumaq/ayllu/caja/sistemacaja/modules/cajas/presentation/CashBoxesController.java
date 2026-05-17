@@ -1,5 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
@@ -18,7 +21,9 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserP
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.CloseCashBoxUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.GetActiveCashBoxUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.GetCashBoxSummaryUseCase;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.ListCashBoxesUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.OpenCashBoxUseCase;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.CashBoxDetailResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.CloseCashBoxRequest;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.OpenCashBoxRequest;
@@ -30,6 +35,7 @@ public class CashBoxesController {
     private final OpenCashBoxUseCase openCashBoxUseCase;
     private final GetActiveCashBoxUseCase getActiveCashBoxUseCase;
     private final GetCashBoxSummaryUseCase getCashBoxSummaryUseCase;
+    private final ListCashBoxesUseCase listCashBoxesUseCase;
     private final CloseCashBoxUseCase closeCashBoxUseCase;
     private final ApiResponseFactory responseFactory;
 
@@ -37,12 +43,14 @@ public class CashBoxesController {
             OpenCashBoxUseCase openCashBoxUseCase,
             GetActiveCashBoxUseCase getActiveCashBoxUseCase,
             GetCashBoxSummaryUseCase getCashBoxSummaryUseCase,
+            ListCashBoxesUseCase listCashBoxesUseCase,
             CloseCashBoxUseCase closeCashBoxUseCase,
             ApiResponseFactory responseFactory
     ) {
         this.openCashBoxUseCase = openCashBoxUseCase;
         this.getActiveCashBoxUseCase = getActiveCashBoxUseCase;
         this.getCashBoxSummaryUseCase = getCashBoxSummaryUseCase;
+        this.listCashBoxesUseCase = listCashBoxesUseCase;
         this.closeCashBoxUseCase = closeCashBoxUseCase;
         this.responseFactory = responseFactory;
     }
@@ -64,6 +72,18 @@ public class CashBoxesController {
         return responseFactory.success(
                 "Caja activa obtenida correctamente.",
                 getActiveCashBoxUseCase.execute(extractPrincipal(authentication))
+        );
+    }
+
+    @GetMapping
+    public ApiResponse<List<CashBoxDetailResponse>> listCashBoxes(
+            @RequestParam(required = false) CashBoxStatus status,
+            @RequestParam(required = false) Long operationalContextId,
+            @RequestParam(required = false) Long openedByUserId
+    ) {
+        return responseFactory.success(
+                "Cajas obtenidas correctamente.",
+                listCashBoxesUseCase.execute(status, operationalContextId, openedByUserId)
         );
     }
 

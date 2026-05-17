@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.application.AuditRegistrar;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashMovementType;
@@ -56,6 +57,7 @@ public class CreateSaleUseCase {
     private final JpaOperationalContextRepository jpaOperationalContextRepository;
     private final JpaUserRepository jpaUserRepository;
     private final SaleMapper saleMapper;
+    private final AuditRegistrar auditRegistrar;
 
     public CreateSaleUseCase(
             JpaSaleRepository jpaSaleRepository,
@@ -66,7 +68,8 @@ public class CreateSaleUseCase {
             JpaCashMovementRepository jpaCashMovementRepository,
             JpaOperationalContextRepository jpaOperationalContextRepository,
             JpaUserRepository jpaUserRepository,
-            SaleMapper saleMapper
+            SaleMapper saleMapper,
+            AuditRegistrar auditRegistrar
     ) {
         this.jpaSaleRepository = jpaSaleRepository;
         this.jpaProductRepository = jpaProductRepository;
@@ -77,6 +80,7 @@ public class CreateSaleUseCase {
         this.jpaOperationalContextRepository = jpaOperationalContextRepository;
         this.jpaUserRepository = jpaUserRepository;
         this.saleMapper = saleMapper;
+        this.auditRegistrar = auditRegistrar;
     }
 
     @Transactional
@@ -216,6 +220,14 @@ public class CreateSaleUseCase {
                 .map(payment -> buildCashMovement(cashBox, payment, principal.getUsername(), finalizedSale.getId()))
                 .toList();
         jpaCashMovementRepository.saveAll(cashMovements);
+        auditRegistrar.record(
+                "VENTA",
+                "REGISTRO",
+                "sale",
+                finalizedSale.getId().toString(),
+                principal.getUsername(),
+                "Venta registrada por total " + finalizedSale.getTotalAmount()
+        );
 
         return saleMapper.toResponse(finalizedSale);
     }

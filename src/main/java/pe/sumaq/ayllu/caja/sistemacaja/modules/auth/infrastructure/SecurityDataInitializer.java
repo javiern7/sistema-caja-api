@@ -45,7 +45,8 @@ public class SecurityDataInitializer {
                     Map.entry("egreso.registrar", "Registro de egresos"),
                     Map.entry("caja.abrir", "Apertura de caja"),
                     Map.entry("caja.cerrar", "Cierre de caja"),
-                    Map.entry("stock.consultar", "Consulta de stock")
+                    Map.entry("stock.consultar", "Consulta de stock"),
+                    Map.entry("auditoria.consultar", "Consulta de auditoria")
             );
 
             permissions.forEach((code, description) -> {
