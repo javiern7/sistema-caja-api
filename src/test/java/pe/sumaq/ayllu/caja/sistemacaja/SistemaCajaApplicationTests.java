@@ -16,6 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.JpaOperationalContextRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashMovementRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.JpaExpenseRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaPermissionRepository;
@@ -80,6 +82,12 @@ class SistemaCajaApplicationTests {
     @MockBean
     private JpaSaleRepository jpaSaleRepository;
 
+    @MockBean
+    private JpaPurchaseRepository jpaPurchaseRepository;
+
+    @MockBean
+    private JpaExpenseRepository jpaExpenseRepository;
+
     @Test
     void contextLoads() {
     }
@@ -127,6 +135,22 @@ class SistemaCajaApplicationTests {
     @Test
     void saleDetailEndpointShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/ventas/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void purchaseDetailEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/compras/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void expenseDetailEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/egresos/1"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
