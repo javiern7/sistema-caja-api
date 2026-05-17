@@ -21,6 +21,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistenc
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.JpaExpenseRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.infrastructure.persistence.JpaReportHistoryRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaPermissionRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaRoleRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.PermissionEntity;
@@ -91,6 +92,9 @@ class SistemaCajaApplicationTests {
 
     @MockBean
     private JpaAuditOperationRepository jpaAuditOperationRepository;
+
+    @MockBean
+    private JpaReportHistoryRepository jpaReportHistoryRepository;
 
     @Test
     void contextLoads() {
@@ -163,6 +167,14 @@ class SistemaCajaApplicationTests {
     @Test
     void auditOperationsEndpointShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/auditoria/operaciones"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void reportsEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/reportes/ventas"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));

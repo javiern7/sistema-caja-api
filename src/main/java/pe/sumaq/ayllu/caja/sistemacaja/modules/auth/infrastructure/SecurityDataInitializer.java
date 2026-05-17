@@ -3,6 +3,7 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,10 +30,6 @@ public class SecurityDataInitializer {
             PasswordEncoder passwordEncoder
     ) {
         return args -> {
-            if (userRepository.count() > 0) {
-                return;
-            }
-
             Map<String, String> permissions = Map.ofEntries(
                     Map.entry("usuario.gestionar", "Gestion de usuarios"),
                     Map.entry("rol.gestionar", "Gestion de roles y permisos"),
@@ -46,7 +43,15 @@ public class SecurityDataInitializer {
                     Map.entry("caja.abrir", "Apertura de caja"),
                     Map.entry("caja.cerrar", "Cierre de caja"),
                     Map.entry("stock.consultar", "Consulta de stock"),
-                    Map.entry("auditoria.consultar", "Consulta de auditoria")
+                    Map.entry("auditoria.consultar", "Consulta de auditoria"),
+                    Map.entry("reporte.ver", "Consulta de reportes"),
+                    Map.entry("reporte.exportar", "Exportacion de reportes"),
+                    Map.entry("reporte.ventas", "Reporte de ventas"),
+                    Map.entry("reporte.caja", "Reporte de caja"),
+                    Map.entry("reporte.compras", "Reporte de compras"),
+                    Map.entry("reporte.egresos", "Reporte de egresos"),
+                    Map.entry("reporte.stock", "Reporte de stock"),
+                    Map.entry("reporte.utilidad", "Reporte de utilidad")
             );
 
             permissions.forEach((code, description) -> {
@@ -69,11 +74,18 @@ public class SecurityDataInitializer {
 
             RoleEntity adminRole = roleRepository.findByName("ADMIN")
                     .orElseGet(() -> createRole(roleRepository, "ADMIN", "Rol administrador", adminPermissions));
+            syncRolePermissions(roleRepository, adminRole, adminPermissions);
+
             RoleEntity cajeroRole = roleRepository.findByName("CAJERO")
                     .orElseGet(() -> createRole(roleRepository, "CAJERO", "Rol cajero", cajeroPermissions));
+            syncRolePermissions(roleRepository, cajeroRole, cajeroPermissions);
 
-            userRepository.save(createUser("admin", "Admin123*", true, adminRole, passwordEncoder));
-            userRepository.save(createUser("cajero", "Cajero123*", true, cajeroRole, passwordEncoder));
+            if (userRepository.findByUsername("admin").isEmpty()) {
+                userRepository.save(createUser("admin", "Admin123*", true, adminRole, passwordEncoder));
+            }
+            if (userRepository.findByUsername("cajero").isEmpty()) {
+                userRepository.save(createUser("cajero", "Cajero123*", true, cajeroRole, passwordEncoder));
+            }
         };
     }
 
@@ -88,6 +100,28 @@ public class SecurityDataInitializer {
         roleEntity.setDescription(description);
         roleEntity.setPermissions(new LinkedHashSet<>(permissions));
         return roleRepository.save(roleEntity);
+    }
+
+    private static void syncRolePermissions(
+            JpaRoleRepository roleRepository,
+            RoleEntity roleEntity,
+            List<PermissionEntity> permissions
+    ) {
+        Set<String> currentCodes = roleEntity.getPermissions().stream()
+                .map(PermissionEntity::getCode)
+                .collect(java.util.stream.Collectors.toSet());
+
+        boolean changed = false;
+        for (PermissionEntity permission : permissions) {
+            if (currentCodes.add(permission.getCode())) {
+                roleEntity.getPermissions().add(permission);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            roleRepository.save(roleEntity);
+        }
     }
 
     private static UserEntity createUser(
