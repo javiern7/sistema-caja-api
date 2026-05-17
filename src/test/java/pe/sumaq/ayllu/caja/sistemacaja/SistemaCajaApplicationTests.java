@@ -26,6 +26,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.JpaSaleRepository;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -76,6 +77,9 @@ class SistemaCajaApplicationTests {
     @MockBean
     private JpaCashMovementRepository jpaCashMovementRepository;
 
+    @MockBean
+    private JpaSaleRepository jpaSaleRepository;
+
     @Test
     void contextLoads() {
     }
@@ -115,6 +119,14 @@ class SistemaCajaApplicationTests {
     @Test
     void activeCashBoxEndpointShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/cajas/activa"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void saleDetailEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/ventas/1"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
