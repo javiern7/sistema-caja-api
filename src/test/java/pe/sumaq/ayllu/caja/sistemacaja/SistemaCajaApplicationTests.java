@@ -14,6 +14,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.JpaOperationalContextRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashMovementRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaPermissionRepository;
@@ -68,6 +70,12 @@ class SistemaCajaApplicationTests {
     @MockBean
     private JpaStockMovementRepository jpaStockMovementRepository;
 
+    @MockBean
+    private JpaCashBoxRepository jpaCashBoxRepository;
+
+    @MockBean
+    private JpaCashMovementRepository jpaCashMovementRepository;
+
     @Test
     void contextLoads() {
     }
@@ -99,6 +107,14 @@ class SistemaCajaApplicationTests {
     @Test
     void stockEndpointShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/stock"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void activeCashBoxEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/cajas/activa"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));

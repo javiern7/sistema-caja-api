@@ -12,6 +12,7 @@ Esta base ya deja preparado:
 - seed automático de permisos, roles y usuarios base
 - endpoints base de `auth`, `usuarios`, `roles`, `contextos-operativos`, `negocios-eventos`, `productos` y `proveedores`
 - consultas base de `stock` actual y movimientos
+- apertura, consulta activa, resumen y cierre de `cajas`
 - respuesta y error estándar para API
 - endpoint técnico de salud
 - configuración de perfiles y carga de migraciones desde `database/`
@@ -42,6 +43,10 @@ Esta base ya deja preparado:
 - `PUT /api/v1/proveedores/{providerId}`
 - `GET /api/v1/stock`
 - `GET /api/v1/stock/movimientos`
+- `POST /api/v1/cajas/aperturas`
+- `GET /api/v1/cajas/activa`
+- `GET /api/v1/cajas/{cajaId}/resumen`
+- `POST /api/v1/cajas/{cajaId}/cierres`
 
 ## Alcance ya revisable por Swagger o Postman
 
@@ -51,8 +56,9 @@ En este punto ya puedes revisar de forma funcional:
 - Fase 2: usuarios, roles, permisos y contexto operativo base
 - Fase 3: catálogos base de productos y proveedores
 - Fase 4 parcial: consulta de stock actual y movimientos base
+- Fase 4 completa: stock base y flujo de caja con apertura, consulta y cierre
 
-Todavía no está lista para prueba funcional completa la parte de caja, ventas, compras, egresos, anulaciones, cierre ni reportes.
+Todavía no está lista para prueba funcional completa la parte de ventas, compras, egresos, anulaciones avanzadas, auditoría ni reportes.
 
 ## Entorno local
 
