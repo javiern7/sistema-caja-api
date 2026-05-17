@@ -11,6 +11,7 @@ Esta base ya deja preparado:
 - autenticación persistente en base de datos
 - seed automático de permisos, roles y usuarios base
 - endpoints base de `auth`, `usuarios`, `roles`, `contextos-operativos`, `negocios-eventos`, `productos` y `proveedores`
+- consultas base de `stock` actual y movimientos
 - respuesta y error estándar para API
 - endpoint técnico de salud
 - configuración de perfiles y carga de migraciones desde `database/`
@@ -39,6 +40,19 @@ Esta base ya deja preparado:
 - `GET /api/v1/proveedores`
 - `POST /api/v1/proveedores`
 - `PUT /api/v1/proveedores/{providerId}`
+- `GET /api/v1/stock`
+- `GET /api/v1/stock/movimientos`
+
+## Alcance ya revisable por Swagger o Postman
+
+En este punto ya puedes revisar de forma funcional:
+
+- Fase 1: base técnica, seguridad inicial y autenticación
+- Fase 2: usuarios, roles, permisos y contexto operativo base
+- Fase 3: catálogos base de productos y proveedores
+- Fase 4 parcial: consulta de stock actual y movimientos base
+
+Todavía no está lista para prueba funcional completa la parte de caja, ventas, compras, egresos, anulaciones, cierre ni reportes.
 
 ## Entorno local
 

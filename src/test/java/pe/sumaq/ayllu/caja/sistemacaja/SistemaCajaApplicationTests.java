@@ -14,10 +14,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.JpaOperationalContextRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaPermissionRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaRoleRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.PermissionEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.RoleEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockCurrentRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 
@@ -52,6 +56,18 @@ class SistemaCajaApplicationTests {
     @MockBean
     private JpaPermissionRepository jpaPermissionRepository;
 
+    @MockBean
+    private JpaProductRepository jpaProductRepository;
+
+    @MockBean
+    private JpaProviderRepository jpaProviderRepository;
+
+    @MockBean
+    private JpaStockCurrentRepository jpaStockCurrentRepository;
+
+    @MockBean
+    private JpaStockMovementRepository jpaStockMovementRepository;
+
     @Test
     void contextLoads() {
     }
@@ -75,6 +91,14 @@ class SistemaCajaApplicationTests {
     @Test
     void operationalContextsEndpointShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/contextos-operativos"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void stockEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/stock"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
