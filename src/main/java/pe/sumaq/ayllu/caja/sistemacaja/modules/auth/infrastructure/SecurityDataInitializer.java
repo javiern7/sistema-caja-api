@@ -9,6 +9,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaPermissionRepository;
@@ -22,6 +23,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persisten
 public class SecurityDataInitializer {
 
     @Bean
+    @Order(10)
     @ConditionalOnProperty(prefix = "app.security.seed", name = "enabled", havingValue = "true", matchIfMissing = true)
     ApplicationRunner seedSecurityData(
             JpaPermissionRepository permissionRepository,

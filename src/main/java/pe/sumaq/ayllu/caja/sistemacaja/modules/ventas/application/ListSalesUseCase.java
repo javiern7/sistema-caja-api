@@ -3,6 +3,7 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.domain.SaleStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.JpaSaleRepository;
@@ -19,6 +20,7 @@ public class ListSalesUseCase {
         this.saleMapper = saleMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<SaleResponse> execute(SaleStatus status) {
         return (status == null
                 ? jpaSaleRepository.findAllByOrderByCreatedAtDesc()

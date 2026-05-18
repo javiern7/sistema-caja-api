@@ -130,6 +130,159 @@
           "path": ["api", "v1", "reportes", "historial"]
         }
       }
+    },
+    {
+      "name": "Contextos operativos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/contextos-operativos",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "contextos-operativos"]
+        }
+      }
+    },
+    {
+      "name": "Productos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/productos",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "productos"]
+        }
+      }
+    },
+    {
+      "name": "Proveedores",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/proveedores",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "proveedores"]
+        }
+      }
+    },
+    {
+      "name": "Stock",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/stock",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "stock"]
+        }
+      }
+    },
+    {
+      "name": "Compras",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/compras",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "compras"]
+        }
+      }
+    },
+    {
+      "name": "Ventas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/ventas",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "ventas"]
+        }
+      }
+    },
+    {
+      "name": "Egresos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/egresos",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "egresos"]
+        }
+      }
+    },
+    {
+      "name": "Cajas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/cajas",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "cajas"]
+        }
+      }
+    },
+    {
+      "name": "Auditoria operaciones",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auditoria/operaciones",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "auditoria", "operaciones"]
+        }
+      }
     }
   ]
 }

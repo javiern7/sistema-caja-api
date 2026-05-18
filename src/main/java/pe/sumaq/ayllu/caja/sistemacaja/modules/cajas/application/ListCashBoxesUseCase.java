@@ -3,6 +3,7 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
@@ -26,6 +27,7 @@ public class ListCashBoxesUseCase {
         this.cashBoxMapper = cashBoxMapper;
     }
 
+    @Transactional(readOnly = true)
     public List<CashBoxDetailResponse> execute(CashBoxStatus status, Long operationalContextId, Long openedByUserId) {
         return jpaCashBoxRepository.findAllByOrderByOpenedAtDesc()
                 .stream()

@@ -103,6 +103,25 @@ En este punto ya puedes revisar de forma funcional:
 
 Estos usuarios se crean automáticamente en base de datos si el esquema está vacío.
 
+## Perfil demo opcional
+
+Si quieres levantar el backend con datos demostrativos para revisar Swagger, Postman o el cliente HTTP de IntelliJ, activa tambien el perfil `demo`.
+
+- IntelliJ o variable de entorno: `SPRING_PROFILES_ACTIVE=demo`
+- Maven: `mvn spring-boot:run -Dspring-boot.run.profiles=demo`
+
+El perfil `demo` deja cargado automaticamente:
+
+- `DEMO-NEG-001` como contexto operativo en curso
+- productos demo `DEMO-PROD-CAFE` y `DEMO-PROD-SAND`
+- proveedor demo `Distribuidora Demo SAC`
+- una compra con ingreso de stock
+- una caja demo abierta y cerrada sin diferencias
+- una venta demo y un egreso demo
+- historial inicial de reportes para consultas operativas
+
+La carga demo es idempotente: si el contexto `DEMO-NEG-001` ya existe, no vuelve a sembrar los datos.
+
 ## Estructura
 
 - `src/main/java`: código fuente principal
@@ -112,4 +131,5 @@ Estos usuarios se crean automáticamente en base de datos si el esquema está va
 - `tests`: pruebas por nivel
 - `docs-tecnicos`: notas técnicas específicas del backend
 - `requests/sistema-caja-smoke.http`: pruebas rápidas para IntelliJ HTTP Client
+- `requests/sistema-caja-demo.http`: recorrido base de datos demo para IntelliJ HTTP Client
 - `postman/Sistema-Caja-MVP.postman_collection.json`: colección base para Postman

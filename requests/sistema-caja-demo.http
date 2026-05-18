@@ -1,0 +1,75 @@
+### Perfil demo
+# Levanta la app con SPRING_PROFILES_ACTIVE=demo
+# Datos esperados:
+# - contexto: DEMO-NEG-001
+# - productos: DEMO-PROD-CAFE, DEMO-PROD-SAND
+# - proveedor: Distribuidora Demo SAC
+
+@baseUrl = http://localhost:8080
+@username = admin
+@password = Admin123*
+
+### Login
+# @name login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+### Token
+@token = {{login.response.body.data.token}}
+
+### Contextos demo
+GET {{baseUrl}}/api/v1/contextos-operativos
+Authorization: Bearer {{token}}
+
+### Productos demo
+GET {{baseUrl}}/api/v1/productos
+Authorization: Bearer {{token}}
+
+### Proveedores demo
+GET {{baseUrl}}/api/v1/proveedores
+Authorization: Bearer {{token}}
+
+### Stock demo
+GET {{baseUrl}}/api/v1/stock
+Authorization: Bearer {{token}}
+
+### Compras demo
+GET {{baseUrl}}/api/v1/compras
+Authorization: Bearer {{token}}
+
+### Ventas demo
+GET {{baseUrl}}/api/v1/ventas
+Authorization: Bearer {{token}}
+
+### Egresos demo
+GET {{baseUrl}}/api/v1/egresos
+Authorization: Bearer {{token}}
+
+### Cajas demo
+GET {{baseUrl}}/api/v1/cajas
+Authorization: Bearer {{token}}
+
+### Auditoria demo
+GET {{baseUrl}}/api/v1/auditoria/operaciones
+Authorization: Bearer {{token}}
+
+### Reporte ventas demo
+GET {{baseUrl}}/api/v1/reportes/ventas
+Authorization: Bearer {{token}}
+
+### Reporte caja demo
+GET {{baseUrl}}/api/v1/reportes/caja
+Authorization: Bearer {{token}}
+
+### Reporte stock demo
+GET {{baseUrl}}/api/v1/reportes/stock
+Authorization: Bearer {{token}}
+
+### Historial reportes demo
+GET {{baseUrl}}/api/v1/reportes/historial
+Authorization: Bearer {{token}}
