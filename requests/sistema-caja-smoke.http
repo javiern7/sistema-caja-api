@@ -1,0 +1,48 @@
+### Variables base
+@baseUrl = http://localhost:8080
+@username = admin
+@password = Admin123*
+
+### Health
+GET {{baseUrl}}/api/v1/system/health
+
+### Login
+# @name login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+### Token
+@token = {{login.response.body.data.token}}
+
+### Usuario actual
+GET {{baseUrl}}/api/v1/auth/me
+Authorization: Bearer {{token}}
+
+### Contextos operativos
+GET {{baseUrl}}/api/v1/contextos-operativos
+Authorization: Bearer {{token}}
+
+### Reporte de ventas
+GET {{baseUrl}}/api/v1/reportes/ventas
+Authorization: Bearer {{token}}
+
+### Reporte de caja
+GET {{baseUrl}}/api/v1/reportes/caja
+Authorization: Bearer {{token}}
+
+### Historial de reportes
+GET {{baseUrl}}/api/v1/reportes/historial
+Authorization: Bearer {{token}}
+
+### Exportar ventas
+GET {{baseUrl}}/api/v1/reportes/ventas/exportar?formato=xlsx
+Authorization: Bearer {{token}}
+
+### Exportar caja
+GET {{baseUrl}}/api/v1/reportes/caja/exportar?formato=pdf
+Authorization: Bearer {{token}}

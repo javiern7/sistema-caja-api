@@ -13,3 +13,10 @@ app:
     jwt:
       secret: ${APP_SECURITY_JWT_SECRET:dev-secret-key-please-change-this-before-production-1234567890}
       expiration: ${APP_SECURITY_JWT_EXPIRATION:PT8H}
+
+springdoc:
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json

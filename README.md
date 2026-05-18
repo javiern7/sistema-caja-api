@@ -111,3 +111,5 @@ Estos usuarios se crean automáticamente en base de datos si el esquema está va
 - `database`: migraciones, seeds y referencias SQL
 - `tests`: pruebas por nivel
 - `docs-tecnicos`: notas técnicas específicas del backend
+- `requests/sistema-caja-smoke.http`: pruebas rápidas para IntelliJ HTTP Client
+- `postman/Sistema-Caja-MVP.postman_collection.json`: colección base para Postman

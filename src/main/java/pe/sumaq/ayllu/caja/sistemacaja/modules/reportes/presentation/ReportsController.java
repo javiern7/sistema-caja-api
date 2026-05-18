@@ -3,6 +3,9 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation;
 import java.time.LocalDate;
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -33,7 +36,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.Utility
 
 @RestController
 @RequestMapping("/api/v1/reportes")
-@PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.ventas', 'reporte.caja', 'reporte.compras', 'reporte.egresos', 'reporte.stock', 'reporte.utilidad')")
+@Tag(name = "Reportes", description = "Consultas operativas y exportaciones del MVP")
+@SecurityRequirement(name = "bearerAuth")
 public class ReportsController {
 
     private final ReportsQueryService reportsQueryService;
@@ -54,6 +58,8 @@ public class ReportsController {
     }
 
     @GetMapping("/ventas")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.ventas')")
+    @Operation(summary = "Reporte de ventas", description = "Consulta ventas efectivas, excluyendo anuladas por defecto.")
     public ApiResponse<SalesReportResponse> getSalesReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,
@@ -73,6 +79,8 @@ public class ReportsController {
     }
 
     @GetMapping("/caja")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.caja')")
+    @Operation(summary = "Reporte de caja", description = "Consulta aperturas, cierres, montos esperados y diferencias.")
     public ApiResponse<CashReportResponse> getCashReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,
@@ -92,6 +100,8 @@ public class ReportsController {
     }
 
     @GetMapping("/compras")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.compras')")
+    @Operation(summary = "Reporte de compras", description = "Consulta compras operativas excluyendo anuladas totales por defecto.")
     public ApiResponse<PurchaseReportResponse> getPurchasesReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,
@@ -111,6 +121,8 @@ public class ReportsController {
     }
 
     @GetMapping("/egresos")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.egresos')")
+    @Operation(summary = "Reporte de egresos", description = "Consulta egresos administrativos y egresos de caja.")
     public ApiResponse<ExpenseReportResponse> getExpensesReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,
@@ -130,6 +142,8 @@ public class ReportsController {
     }
 
     @GetMapping("/stock")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.stock', 'stock.consultar')")
+    @Operation(summary = "Reporte de stock", description = "Consulta stock actual global del MVP.")
     public ApiResponse<StockReportResponse> getStockReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,
@@ -149,6 +163,8 @@ public class ReportsController {
     }
 
     @GetMapping("/utilidad")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.utilidad')")
+    @Operation(summary = "Reporte de utilidad", description = "Calcula utilidad operativa estimada en base a ventas, costos de referencia y egresos.")
     public ApiResponse<UtilityReportResponse> getUtilityReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,
@@ -169,6 +185,7 @@ public class ReportsController {
 
     @GetMapping("/ventas/exportar")
     @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.ventas')")
+    @Operation(summary = "Exportar reporte de ventas", description = "Exporta el reporte de ventas en formato xlsx.")
     public ResponseEntity<byte[]> exportSalesReport(
             Authentication authentication,
             @RequestParam String formato,
@@ -199,6 +216,7 @@ public class ReportsController {
 
     @GetMapping("/caja/exportar")
     @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.caja')")
+    @Operation(summary = "Exportar reporte de caja", description = "Exporta el reporte de caja en formato pdf.")
     public ResponseEntity<byte[]> exportCashReport(
             Authentication authentication,
             @RequestParam String formato,
@@ -228,6 +246,8 @@ public class ReportsController {
     }
 
     @GetMapping("/historial")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.exportar')")
+    @Operation(summary = "Historial de reportes", description = "Consulta trazabilidad de reportes generados por usuario, tipo y filtros.")
     public ApiResponse<List<ReportHistoryResponse>> getReportHistory(
             @RequestParam(required = false) String reportType,
             @RequestParam(required = false) String generatedBy
