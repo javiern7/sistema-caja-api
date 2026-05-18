@@ -30,6 +30,14 @@ public class CreateUserUseCase {
     }
 
     public UserEntity execute(CreateUserRequest request) {
+        if (jpaUserRepository.existsByUsername(request.username())) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    HttpStatus.CONFLICT,
+                    "Ya existe un usuario con el username indicado."
+            );
+        }
+
         RoleEntity roleEntity = jpaRoleRepository.findById(request.roleId())
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.ROL_NO_ENCONTRADO,

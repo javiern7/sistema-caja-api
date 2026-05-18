@@ -54,6 +54,7 @@ public class ProductsController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('producto.gestionar', 'venta.registrar', 'compra.registrar', 'stock.consultar')")
     public ApiResponse<List<ProductResponse>> listProducts(
             @RequestParam(required = false) Boolean active
     ) {

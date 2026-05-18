@@ -64,6 +64,7 @@ public class SalesController {
     }
 
     @GetMapping("/{saleId}")
+    @PreAuthorize("hasAnyAuthority('venta.registrar', 'venta.anular')")
     public ApiResponse<SaleResponse> getSaleDetail(@PathVariable Long saleId) {
         return responseFactory.success(
                 "Detalle de venta obtenido correctamente.",
@@ -85,6 +86,7 @@ public class SalesController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('venta.registrar', 'venta.anular')")
     public ApiResponse<List<SaleResponse>> listSales(@RequestParam(required = false) SaleStatus status) {
         return responseFactory.success(
                 "Ventas obtenidas correctamente.",

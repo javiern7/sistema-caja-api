@@ -47,6 +47,7 @@ public class ProvidersController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('proveedor.gestionar', 'compra.registrar')")
     public ApiResponse<List<ProviderResponse>> listProviders() {
         return responseFactory.success(
                 "Proveedores obtenidos correctamente.",

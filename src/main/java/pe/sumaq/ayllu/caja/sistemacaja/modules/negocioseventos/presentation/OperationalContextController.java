@@ -48,6 +48,7 @@ public class OperationalContextController {
     }
 
     @GetMapping("/contextos-operativos")
+    @PreAuthorize("hasAnyAuthority('negocioevento.gestionar', 'caja.abrir', 'venta.registrar', 'compra.registrar', 'egreso.registrar')")
     public ApiResponse<List<OperationalContextResponse>> listAvailableOperationalContexts() {
         return responseFactory.success(
                 "Contextos operativos disponibles obtenidos correctamente.",

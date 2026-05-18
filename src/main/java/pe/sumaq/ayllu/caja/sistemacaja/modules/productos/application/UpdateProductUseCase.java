@@ -34,6 +34,14 @@ public class UpdateProductUseCase {
                         "No se encontro el producto solicitado."
                 ));
 
+        if (jpaProductRepository.existsByCodeAndIdNot(request.code(), productId)) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    HttpStatus.CONFLICT,
+                    "Ya existe un producto con el codigo indicado."
+            );
+        }
+
         productEntity.setCode(request.code());
         productEntity.setName(request.name());
         productEntity.setUnitOfMeasure(request.unitOfMeasure());

@@ -57,6 +57,7 @@ public class ExpensesController {
     }
 
     @GetMapping("/{expenseId}")
+    @PreAuthorize("hasAuthority('egreso.registrar')")
     public ApiResponse<ExpenseResponse> getExpenseDetail(@PathVariable Long expenseId) {
         return responseFactory.success(
                 "Detalle de egreso obtenido correctamente.",
@@ -65,6 +66,7 @@ public class ExpensesController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('egreso.registrar')")
     public ApiResponse<List<ExpenseResponse>> listExpenses() {
         return responseFactory.success(
                 "Egresos obtenidos correctamente.",

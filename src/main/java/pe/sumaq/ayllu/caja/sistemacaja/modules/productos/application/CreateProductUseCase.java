@@ -1,8 +1,11 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.productos.application;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
+import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.ProductEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.application.StockCatalogSynchronizer;
@@ -24,6 +27,14 @@ public class CreateProductUseCase {
 
     @Transactional
     public ProductEntity execute(CreateProductRequest request) {
+        if (jpaProductRepository.existsByCode(request.code())) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    HttpStatus.CONFLICT,
+                    "Ya existe un producto con el codigo indicado."
+            );
+        }
+
         ProductEntity productEntity = new ProductEntity();
         productEntity.setCode(request.code());
         productEntity.setName(request.name());

@@ -68,6 +68,7 @@ public class CashBoxesController {
     }
 
     @GetMapping("/activa")
+    @PreAuthorize("hasAnyAuthority('caja.abrir', 'caja.cerrar')")
     public ApiResponse<CashBoxDetailResponse> getActiveCashBox(Authentication authentication) {
         return responseFactory.success(
                 "Caja activa obtenida correctamente.",
@@ -76,6 +77,7 @@ public class CashBoxesController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('caja.abrir', 'caja.cerrar')")
     public ApiResponse<List<CashBoxDetailResponse>> listCashBoxes(
             @RequestParam(required = false) CashBoxStatus status,
             @RequestParam(required = false) Long operationalContextId,
@@ -88,6 +90,7 @@ public class CashBoxesController {
     }
 
     @GetMapping("/{cashBoxId}/resumen")
+    @PreAuthorize("hasAnyAuthority('caja.abrir', 'caja.cerrar')")
     public ApiResponse<CashBoxDetailResponse> getCashBoxSummary(@PathVariable Long cashBoxId) {
         return responseFactory.success(
                 "Resumen de caja obtenido correctamente.",

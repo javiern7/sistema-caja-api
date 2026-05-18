@@ -10,4 +10,8 @@ public interface JpaProductRepository extends JpaRepository<ProductEntity, Long>
     List<ProductEntity> findAllByActive(boolean active);
 
     Optional<ProductEntity> findByCode(String code);
+
+    boolean existsByCode(String code);
+
+    boolean existsByCodeAndIdNot(String code, Long id);
 }

@@ -64,6 +64,7 @@ public class PurchasesController {
     }
 
     @GetMapping("/{purchaseId}")
+    @PreAuthorize("hasAuthority('compra.registrar')")
     public ApiResponse<PurchaseResponse> getPurchaseDetail(@PathVariable Long purchaseId) {
         return responseFactory.success(
                 "Detalle de compra obtenido correctamente.",
@@ -72,6 +73,7 @@ public class PurchasesController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('compra.registrar')")
     public ApiResponse<List<PurchaseResponse>> listPurchases(@RequestParam(required = false) PurchaseStatus status) {
         return responseFactory.success(
                 "Compras obtenidas correctamente.",

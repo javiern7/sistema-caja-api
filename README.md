@@ -96,6 +96,14 @@ En este punto ya puedes revisar de forma funcional:
 - usuario: `cajaapi`
 - password: `cajaapi`
 
+## Flujo comodo en IntelliJ
+
+El proyecto ya incluye `spring-boot-devtools` como dependencia `runtime` opcional para facilitar reinicio automatico durante desarrollo local.
+
+- si ejecutas desde IntelliJ, activa `Build project automatically`
+- para reinicio mas fluido, usa el perfil `local` o `demo`
+- los cambios en clases y recursos deberian reflejarse con reinicio rapido del backend
+
 ## Usuarios seed para entorno local
 
 - `admin` / `Admin123*`

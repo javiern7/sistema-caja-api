@@ -37,6 +37,14 @@ public class UpdateUserUseCase {
                         "No se encontro el usuario solicitado."
                 ));
 
+        if (jpaUserRepository.existsByUsernameAndIdNot(request.username(), userId)) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_ERROR,
+                    HttpStatus.CONFLICT,
+                    "Ya existe un usuario con el username indicado."
+            );
+        }
+
         RoleEntity roleEntity = jpaRoleRepository.findById(request.roleId())
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.ROL_NO_ENCONTRADO,

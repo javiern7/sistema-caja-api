@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +34,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persisten
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.JpaSaleRepository;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -181,6 +183,33 @@ class SistemaCajaApplicationTests {
     }
 
     @Test
+    void operationalContextsEndpointShouldRejectAuthenticatedUserWithoutOperationalPermission() throws Exception {
+        mockMvc.perform(get("/api/v1/contextos-operativos")
+                        .with(user("visitante").authorities(new SimpleGrantedAuthority[0])))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN_OPERATION"));
+    }
+
+    @Test
+    void salesEndpointShouldRejectAuthenticatedUserWithoutSalesPermission() throws Exception {
+        mockMvc.perform(get("/api/v1/ventas")
+                        .with(user("visitante").authorities(new SimpleGrantedAuthority[0])))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN_OPERATION"));
+    }
+
+    @Test
+    void productsEndpointShouldRejectAuthenticatedUserWithoutCatalogOrOperationalPermission() throws Exception {
+        mockMvc.perform(get("/api/v1/productos")
+                        .with(user("visitante").authorities(new SimpleGrantedAuthority[0])))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN_OPERATION"));
+    }
+
+    @Test
     void loginShouldReturnTokenForAdminFromPersistentUserStore() throws Exception {
         when(jpaUserRepository.findByUsername("admin")).thenReturn(Optional.of(buildAdminUser()));
 
@@ -198,6 +227,51 @@ class SistemaCajaApplicationTests {
                 .andExpect(jsonPath("$.data.user.username").value("admin"))
                 .andExpect(jsonPath("$.data.user.role").value("ADMIN"))
                 .andExpect(jsonPath("$.data.permissions").isArray());
+    }
+
+    @Test
+    void createUserShouldReturnConflictWhenUsernameAlreadyExists() throws Exception {
+        when(jpaUserRepository.existsByUsername("duplicado")).thenReturn(true);
+
+        mockMvc.perform(post("/api/v1/usuarios")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("usuario.gestionar")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "duplicado",
+                                  "password": "Admin123*",
+                                  "roleId": 1,
+                                  "active": true
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void createProductShouldReturnConflictWhenCodeAlreadyExists() throws Exception {
+        when(jpaProductRepository.existsByCode("PROD-EXISTE")).thenReturn(true);
+
+        mockMvc.perform(post("/api/v1/productos")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("producto.gestionar")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "code": "PROD-EXISTE",
+                                  "name": "Producto repetido",
+                                  "unitOfMeasure": "UND",
+                                  "salePrice": 10.00,
+                                  "referenceCost": 5.00,
+                                  "minimumStock": 1.00,
+                                  "stockControlled": true,
+                                  "active": true,
+                                  "description": "Duplicado de prueba"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
     }
 
     private UserEntity buildAdminUser() {
