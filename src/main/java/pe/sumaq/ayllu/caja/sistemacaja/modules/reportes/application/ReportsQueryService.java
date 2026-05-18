@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.CashBoxEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
@@ -61,6 +62,7 @@ public class ReportsQueryService {
         this.reportHistoryRegistrar = reportHistoryRegistrar;
     }
 
+    @Transactional(readOnly = true)
     public SalesReportResponse getSalesReport(
             LocalDate fechaDesde,
             LocalDate fechaHasta,
@@ -99,6 +101,7 @@ public class ReportsQueryService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public CashReportResponse getCashReport(
             LocalDate fechaDesde,
             LocalDate fechaHasta,
@@ -142,6 +145,7 @@ public class ReportsQueryService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public PurchaseReportResponse getPurchasesReport(
             LocalDate fechaDesde,
             LocalDate fechaHasta,
@@ -179,6 +183,7 @@ public class ReportsQueryService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public ExpenseReportResponse getExpensesReport(
             LocalDate fechaDesde,
             LocalDate fechaHasta,
@@ -217,6 +222,7 @@ public class ReportsQueryService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public StockReportResponse getStockReport(
             LocalDate fechaDesde,
             LocalDate fechaHasta,
@@ -238,6 +244,7 @@ public class ReportsQueryService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public UtilityReportResponse getUtilityReport(
             LocalDate fechaDesde,
             LocalDate fechaHasta,

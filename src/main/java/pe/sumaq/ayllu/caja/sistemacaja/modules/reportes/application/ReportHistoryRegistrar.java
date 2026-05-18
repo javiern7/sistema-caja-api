@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.domain.ReportFormat;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.domain.ReportType;
@@ -19,6 +21,7 @@ public class ReportHistoryRegistrar {
         this.jpaReportHistoryRepository = jpaReportHistoryRepository;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(
             ReportType reportType,
             ReportFormat format,

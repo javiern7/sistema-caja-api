@@ -218,6 +218,6 @@ public class PurchaseEntity {
     }
 
     public void setItems(List<PurchaseItemEntity> items) {
-        this.items = items;
+        this.items = new ArrayList<>(items);
     }
 }

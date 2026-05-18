@@ -198,7 +198,7 @@ public class SaleEntity {
     }
 
     public void setItems(List<SaleItemEntity> items) {
-        this.items = items;
+        this.items = new ArrayList<>(items);
     }
 
     public List<SalePaymentEntity> getPayments() {
@@ -206,6 +206,6 @@ public class SaleEntity {
     }
 
     public void setPayments(List<SalePaymentEntity> payments) {
-        this.payments = payments;
+        this.payments = new ArrayList<>(payments);
     }
 }

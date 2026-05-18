@@ -1,6 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.productos.application;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.ProductEntity;
@@ -21,6 +22,7 @@ public class CreateProductUseCase {
         this.stockCatalogSynchronizer = stockCatalogSynchronizer;
     }
 
+    @Transactional
     public ProductEntity execute(CreateProductRequest request) {
         ProductEntity productEntity = new ProductEntity();
         productEntity.setCode(request.code());
@@ -32,7 +34,7 @@ public class CreateProductUseCase {
         productEntity.setStockControlled(request.stockControlled());
         productEntity.setActive(request.active());
         productEntity.setDescription(request.description());
-        ProductEntity savedProduct = jpaProductRepository.save(productEntity);
+        ProductEntity savedProduct = jpaProductRepository.saveAndFlush(productEntity);
         stockCatalogSynchronizer.ensureCurrentStockRow(savedProduct);
         return savedProduct;
     }

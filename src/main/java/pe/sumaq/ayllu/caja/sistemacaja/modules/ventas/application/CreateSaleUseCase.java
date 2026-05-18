@@ -205,7 +205,7 @@ public class CreateSaleUseCase {
                     paymentEntity.setAmount(paymentRequest.amount());
                     return paymentEntity;
                 })
-                .toList();
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         saleEntity.setPayments(salePayments);
 
         SaleEntity savedSale = jpaSaleRepository.save(saleEntity);
@@ -218,7 +218,7 @@ public class CreateSaleUseCase {
 
         List<CashMovementEntity> cashMovements = request.payments().stream()
                 .map(payment -> buildCashMovement(cashBox, payment, principal.getUsername(), finalizedSale.getId()))
-                .toList();
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
         jpaCashMovementRepository.saveAll(cashMovements);
         auditRegistrar.record(
                 "VENTA",

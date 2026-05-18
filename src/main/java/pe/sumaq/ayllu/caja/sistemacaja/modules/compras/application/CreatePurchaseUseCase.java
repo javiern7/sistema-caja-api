@@ -2,6 +2,7 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +137,7 @@ public class CreatePurchaseUseCase {
                     itemEntity.setSubtotalAmount(itemSubtotal);
                     return itemEntity;
                 })
-                .toList();
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
         for (PurchaseItemEntity item : purchaseItems) {
             subtotal = subtotal.add(item.getSubtotalAmount());

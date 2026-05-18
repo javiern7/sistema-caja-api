@@ -2,6 +2,7 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.productos.application;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
@@ -24,6 +25,7 @@ public class UpdateProductUseCase {
         this.stockCatalogSynchronizer = stockCatalogSynchronizer;
     }
 
+    @Transactional
     public ProductEntity execute(Long productId, UpdateProductRequest request) {
         ProductEntity productEntity = jpaProductRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(
@@ -41,7 +43,7 @@ public class UpdateProductUseCase {
         productEntity.setStockControlled(request.stockControlled());
         productEntity.setActive(request.active());
         productEntity.setDescription(request.description());
-        ProductEntity savedProduct = jpaProductRepository.save(productEntity);
+        ProductEntity savedProduct = jpaProductRepository.saveAndFlush(productEntity);
         stockCatalogSynchronizer.ensureCurrentStockRow(savedProduct);
         return savedProduct;
     }
