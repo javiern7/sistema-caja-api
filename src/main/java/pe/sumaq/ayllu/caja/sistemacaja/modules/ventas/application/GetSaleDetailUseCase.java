@@ -2,6 +2,7 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
@@ -19,6 +20,7 @@ public class GetSaleDetailUseCase {
         this.saleMapper = saleMapper;
     }
 
+    @Transactional(readOnly = true)
     public SaleResponse execute(Long saleId) {
         return jpaSaleRepository.findById(saleId)
                 .map(saleMapper::toResponse)
