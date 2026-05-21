@@ -2,13 +2,15 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persisten
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.domain.PurchaseStatus;
 
 public interface JpaPurchaseRepository extends JpaRepository<PurchaseEntity, Long> {
 
-    List<PurchaseEntity> findAllByStatusOrderByCreatedAtDesc(PurchaseStatus status);
+    Page<PurchaseEntity> findAllByStatus(PurchaseStatus status, Pageable pageable);
 
     List<PurchaseEntity> findAllByOrderByCreatedAtDesc();
 }

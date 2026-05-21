@@ -1,8 +1,11 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +20,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application.CancelPurchaseUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application.CreatePurchaseUseCase;
@@ -25,16 +30,29 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application.ListPurchases
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.domain.PurchaseStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.CancelPurchaseRequest;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.CreatePurchaseRequest;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseListResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseResponse;
 
 @RestController
 @RequestMapping("/api/v1/compras")
 public class PurchasesController {
 
+    private static final Set<String> ALLOWED_SORTS = Set.of(
+            "id",
+            "status",
+            "purchaseDate",
+            "documentNumber",
+            "subtotalAmount",
+            "totalAmount",
+            "createdAt",
+            "cancelledAt"
+    );
+
     private final CreatePurchaseUseCase createPurchaseUseCase;
     private final GetPurchaseDetailUseCase getPurchaseDetailUseCase;
     private final ListPurchasesUseCase listPurchasesUseCase;
     private final CancelPurchaseUseCase cancelPurchaseUseCase;
+    private final PageableFactory pageableFactory;
     private final ApiResponseFactory responseFactory;
 
     public PurchasesController(
@@ -42,12 +60,14 @@ public class PurchasesController {
             GetPurchaseDetailUseCase getPurchaseDetailUseCase,
             ListPurchasesUseCase listPurchasesUseCase,
             CancelPurchaseUseCase cancelPurchaseUseCase,
+            PageableFactory pageableFactory,
             ApiResponseFactory responseFactory
     ) {
         this.createPurchaseUseCase = createPurchaseUseCase;
         this.getPurchaseDetailUseCase = getPurchaseDetailUseCase;
         this.listPurchasesUseCase = listPurchasesUseCase;
         this.cancelPurchaseUseCase = cancelPurchaseUseCase;
+        this.pageableFactory = pageableFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -74,10 +94,23 @@ public class PurchasesController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('compra.registrar')")
-    public ApiResponse<List<PurchaseResponse>> listPurchases(@RequestParam(required = false) PurchaseStatus status) {
+    public ApiResponse<PageResponse<PurchaseListResponse>> listPurchases(
+            @RequestParam(required = false) PurchaseStatus status,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "createdAt"),
+                ALLOWED_SORTS
+        );
+
         return responseFactory.success(
                 "Compras obtenidas correctamente.",
-                listPurchasesUseCase.execute(status)
+                PageResponse.from(listPurchasesUseCase.execute(status, pageable))
         );
     }
 

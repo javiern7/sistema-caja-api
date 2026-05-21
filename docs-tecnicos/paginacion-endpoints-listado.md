@@ -126,13 +126,34 @@ Esto evita inconsistencias entre una página parcial y los totales globales del 
 - `GET /api/v1/usuarios`
 - `GET /api/v1/roles`
 - `GET /api/v1/negocios-eventos`
+- `GET /api/v1/ventas`
+- `GET /api/v1/compras`
+- `GET /api/v1/cajas`
 
-Ambos ya:
+Estos endpoints ya:
 
 - aceptan `page`, `size`, `sort`
 - conservan filtros actuales
 - ejecutan filtros en base de datos
 - devuelven `PageResponse<T>`
+
+## Decisiones adicionales implementadas
+
+### Ventas
+
+- el listado ahora devuelve `SaleListResponse`
+- el detalle completo con `items` y `payments` se mantiene en `GET /api/v1/ventas/{saleId}`
+
+### Compras
+
+- el listado ahora devuelve `PurchaseListResponse`
+- el detalle completo con `items` se mantiene en `GET /api/v1/compras/{purchaseId}`
+
+### Cajas
+
+- el listado ahora devuelve `CashBoxListResponse`
+- el detalle con `movements` se mantiene en `GET /api/v1/cajas/{cashBoxId}/resumen` y `GET /api/v1/cajas/activa`
+- se eliminó el filtrado en memoria y el patrón N+1 del endpoint de listado
 
 ## Guía para próximos endpoints
 

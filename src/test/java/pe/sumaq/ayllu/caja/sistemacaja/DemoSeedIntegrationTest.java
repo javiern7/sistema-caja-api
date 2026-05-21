@@ -48,10 +48,10 @@ class DemoSeedIntegrationTest {
         String token = loginAsAdmin();
         JsonNode contexts = read(performGet("/api/v1/contextos-operativos", token)).path("data");
         JsonNode products = read(performGet("/api/v1/productos", token)).path("data").path("items");
-        JsonNode purchases = read(performGet("/api/v1/compras", token)).path("data");
-        JsonNode sales = read(performGet("/api/v1/ventas", token)).path("data");
+        JsonNode purchases = read(performGet("/api/v1/compras", token)).path("data").path("items");
+        JsonNode sales = read(performGet("/api/v1/ventas", token)).path("data").path("items");
         JsonNode expenses = read(performGet("/api/v1/egresos", token)).path("data").path("items");
-        JsonNode cashBoxes = read(performGet("/api/v1/cajas", token)).path("data");
+        JsonNode cashBoxes = read(performGet("/api/v1/cajas", token)).path("data").path("items");
         JsonNode salesReport = read(performGet("/api/v1/reportes/ventas", token)).path("data");
         JsonNode history = read(performGet("/api/v1/reportes/historial", token)).path("data");
 

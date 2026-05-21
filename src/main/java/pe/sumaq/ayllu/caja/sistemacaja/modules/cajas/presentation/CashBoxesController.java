@@ -1,8 +1,11 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +20,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.CloseCashBoxUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.GetActiveCashBoxUseCase;
@@ -25,6 +30,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.ListCashBoxesUs
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.application.OpenCashBoxUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.CashBoxDetailResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.CashBoxListResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.CloseCashBoxRequest;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.OpenCashBoxRequest;
 
@@ -32,11 +38,23 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.presentation.dto.OpenCashBo
 @RequestMapping("/api/v1/cajas")
 public class CashBoxesController {
 
+    private static final Set<String> ALLOWED_SORTS = Set.of(
+            "id",
+            "status",
+            "openingAmount",
+            "expectedAmount",
+            "countedAmount",
+            "differenceAmount",
+            "openedAt",
+            "closedAt"
+    );
+
     private final OpenCashBoxUseCase openCashBoxUseCase;
     private final GetActiveCashBoxUseCase getActiveCashBoxUseCase;
     private final GetCashBoxSummaryUseCase getCashBoxSummaryUseCase;
     private final ListCashBoxesUseCase listCashBoxesUseCase;
     private final CloseCashBoxUseCase closeCashBoxUseCase;
+    private final PageableFactory pageableFactory;
     private final ApiResponseFactory responseFactory;
 
     public CashBoxesController(
@@ -45,6 +63,7 @@ public class CashBoxesController {
             GetCashBoxSummaryUseCase getCashBoxSummaryUseCase,
             ListCashBoxesUseCase listCashBoxesUseCase,
             CloseCashBoxUseCase closeCashBoxUseCase,
+            PageableFactory pageableFactory,
             ApiResponseFactory responseFactory
     ) {
         this.openCashBoxUseCase = openCashBoxUseCase;
@@ -52,6 +71,7 @@ public class CashBoxesController {
         this.getCashBoxSummaryUseCase = getCashBoxSummaryUseCase;
         this.listCashBoxesUseCase = listCashBoxesUseCase;
         this.closeCashBoxUseCase = closeCashBoxUseCase;
+        this.pageableFactory = pageableFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -78,14 +98,25 @@ public class CashBoxesController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('caja.abrir', 'caja.cerrar')")
-    public ApiResponse<List<CashBoxDetailResponse>> listCashBoxes(
+    public ApiResponse<PageResponse<CashBoxListResponse>> listCashBoxes(
             @RequestParam(required = false) CashBoxStatus status,
             @RequestParam(required = false) Long operationalContextId,
-            @RequestParam(required = false) Long openedByUserId
+            @RequestParam(required = false) Long openedByUserId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
     ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "openedAt"),
+                ALLOWED_SORTS
+        );
+
         return responseFactory.success(
                 "Cajas obtenidas correctamente.",
-                listCashBoxesUseCase.execute(status, operationalContextId, openedByUserId)
+                PageResponse.from(listCashBoxesUseCase.execute(status, operationalContextId, openedByUserId, pageable))
         );
     }
 

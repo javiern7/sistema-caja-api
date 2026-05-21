@@ -19,8 +19,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.AuditOperationEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.JpaAuditOperationRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.CashBoxEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashMovementRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.domain.PurchaseStatus;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.PurchaseEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.domain.ExpenseType;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.ExpenseEntity;
@@ -45,6 +49,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.JpaSaleRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.SaleEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.domain.SaleStatus;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -289,6 +295,137 @@ class PaginationEndpointsTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].id").value(31))
                 .andExpect(jsonPath("$.data.items[0].productCode").value("INS-001"))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    void salesEndpointShouldReturnPaginatedResponse() throws Exception {
+        OperationalContextEntity operationalContext = new OperationalContextEntity();
+        operationalContext.setId(6L);
+        operationalContext.setName("Sucursal Norte");
+
+        UserEntity soldBy = new UserEntity();
+        soldBy.setUsername("cajero1");
+
+        CashBoxEntity cashBoxEntity = new CashBoxEntity();
+        cashBoxEntity.setId(13L);
+
+        SaleEntity saleEntity = new SaleEntity();
+        saleEntity.setId(41L);
+        saleEntity.setOperationalContext(operationalContext);
+        saleEntity.setCashBox(cashBoxEntity);
+        saleEntity.setSoldBy(soldBy);
+        saleEntity.setStatus(SaleStatus.REGISTRADA);
+        saleEntity.setSubtotalAmount(new BigDecimal("25.00"));
+        saleEntity.setTotalAmount(new BigDecimal("30.00"));
+        saleEntity.setInternalReceiptSeries("B001");
+        saleEntity.setInternalReceiptNumber(55L);
+        saleEntity.setObservation("Venta mostrador");
+        saleEntity.setCreatedAt(LocalDateTime.of(2026, 5, 20, 14, 0));
+
+        when(jpaSaleRepository.findAll(any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(saleEntity),
+                        PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")),
+                        1
+                ));
+
+        mockMvc.perform(get("/api/v1/ventas")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("venta.registrar")))
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items[0].id").value(41))
+                .andExpect(jsonPath("$.data.items[0].soldByUsername").value("cajero1"))
+                .andExpect(jsonPath("$.data.items[0].itemsCount").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    void purchasesEndpointShouldReturnPaginatedResponse() throws Exception {
+        OperationalContextEntity operationalContext = new OperationalContextEntity();
+        operationalContext.setId(7L);
+        operationalContext.setName("Sucursal Sur");
+
+        ProviderEntity providerEntity = new ProviderEntity();
+        providerEntity.setId(5L);
+        providerEntity.setName("Proveedor Demo");
+
+        UserEntity purchasedBy = new UserEntity();
+        purchasedBy.setUsername("comprador1");
+
+        PurchaseEntity purchaseEntity = new PurchaseEntity();
+        purchaseEntity.setId(51L);
+        purchaseEntity.setOperationalContext(operationalContext);
+        purchaseEntity.setProvider(providerEntity);
+        purchaseEntity.setPurchasedBy(purchasedBy);
+        purchaseEntity.setStatus(PurchaseStatus.REGISTRADA);
+        purchaseEntity.setPurchaseDate(LocalDate.of(2026, 5, 20));
+        purchaseEntity.setDocumentType("FACTURA");
+        purchaseEntity.setDocumentNumber("F001-99");
+        purchaseEntity.setPaymentMethod("EFECTIVO");
+        purchaseEntity.setSubtotalAmount(new BigDecimal("80.00"));
+        purchaseEntity.setTotalAmount(new BigDecimal("94.40"));
+        purchaseEntity.setObservation("Compra de prueba");
+        purchaseEntity.setCreatedAt(LocalDateTime.of(2026, 5, 20, 15, 0));
+
+        when(jpaPurchaseRepository.findAll(any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(purchaseEntity),
+                        PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")),
+                        1
+                ));
+
+        mockMvc.perform(get("/api/v1/compras")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("compra.registrar")))
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items[0].id").value(51))
+                .andExpect(jsonPath("$.data.items[0].providerName").value("Proveedor Demo"))
+                .andExpect(jsonPath("$.data.items[0].itemsCount").value(0))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    void cashBoxesEndpointShouldReturnPaginatedResponse() throws Exception {
+        OperationalContextEntity operationalContext = new OperationalContextEntity();
+        operationalContext.setId(8L);
+        operationalContext.setCode("CTX-008");
+        operationalContext.setName("Caja Principal");
+
+        UserEntity openedBy = new UserEntity();
+        openedBy.setId(3L);
+        openedBy.setUsername("cajero-central");
+
+        CashBoxEntity cashBoxEntity = new CashBoxEntity();
+        cashBoxEntity.setId(61L);
+        cashBoxEntity.setOperationalContext(operationalContext);
+        cashBoxEntity.setOpenedBy(openedBy);
+        cashBoxEntity.setStatus(CashBoxStatus.ABIERTA);
+        cashBoxEntity.setOpeningAmount(new BigDecimal("100.00"));
+        cashBoxEntity.setExpectedAmount(new BigDecimal("150.00"));
+        cashBoxEntity.setOpeningObservation("Turno mañana");
+        cashBoxEntity.setOpenedAt(LocalDateTime.of(2026, 5, 20, 8, 0));
+
+        when(jpaCashBoxRepository.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(cashBoxEntity),
+                        PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "openedAt")),
+                        1
+                ));
+
+        mockMvc.perform(get("/api/v1/cajas")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("caja.abrir")))
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items[0].id").value(61))
+                .andExpect(jsonPath("$.data.items[0].operationalContextCode").value("CTX-008"))
+                .andExpect(jsonPath("$.data.items[0].openedByUsername").value("cajero-central"))
                 .andExpect(jsonPath("$.data.totalElements").value(1));
     }
 

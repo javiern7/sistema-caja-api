@@ -4,11 +4,34 @@ import org.springframework.stereotype.Component;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.SaleEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.SaleItemResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.SaleListResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.SalePaymentResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.SaleResponse;
 
 @Component
 public class SaleMapper {
+
+    public SaleListResponse toListResponse(SaleEntity saleEntity) {
+        return new SaleListResponse(
+                saleEntity.getId(),
+                saleEntity.getOperationalContext().getId(),
+                saleEntity.getOperationalContext().getName(),
+                saleEntity.getCashBox().getId(),
+                saleEntity.getSoldBy().getUsername(),
+                saleEntity.getStatus(),
+                saleEntity.getSubtotalAmount(),
+                saleEntity.getTotalAmount(),
+                saleEntity.getInternalReceiptSeries(),
+                saleEntity.getInternalReceiptNumber(),
+                saleEntity.getObservation(),
+                saleEntity.getCreatedAt(),
+                saleEntity.getCancelledAt(),
+                saleEntity.getCancelledBy() != null ? saleEntity.getCancelledBy().getUsername() : null,
+                saleEntity.getCancellationReason(),
+                saleEntity.getItems().size(),
+                saleEntity.getPayments().size()
+        );
+    }
 
     public SaleResponse toResponse(SaleEntity saleEntity) {
         return new SaleResponse(

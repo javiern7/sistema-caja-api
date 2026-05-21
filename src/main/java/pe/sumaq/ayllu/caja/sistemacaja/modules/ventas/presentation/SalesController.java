@@ -1,8 +1,11 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +20,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application.CancelSaleUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application.CreateSaleUseCase;
@@ -25,16 +30,28 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application.ListSalesUseCa
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.domain.SaleStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.CancelSaleRequest;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.CreateSaleRequest;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.SaleListResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.SaleResponse;
 
 @RestController
 @RequestMapping("/api/v1/ventas")
 public class SalesController {
 
+    private static final Set<String> ALLOWED_SORTS = Set.of(
+            "id",
+            "status",
+            "subtotalAmount",
+            "totalAmount",
+            "internalReceiptNumber",
+            "createdAt",
+            "cancelledAt"
+    );
+
     private final CreateSaleUseCase createSaleUseCase;
     private final GetSaleDetailUseCase getSaleDetailUseCase;
     private final CancelSaleUseCase cancelSaleUseCase;
     private final ListSalesUseCase listSalesUseCase;
+    private final PageableFactory pageableFactory;
     private final ApiResponseFactory responseFactory;
 
     public SalesController(
@@ -42,12 +59,14 @@ public class SalesController {
             GetSaleDetailUseCase getSaleDetailUseCase,
             CancelSaleUseCase cancelSaleUseCase,
             ListSalesUseCase listSalesUseCase,
+            PageableFactory pageableFactory,
             ApiResponseFactory responseFactory
     ) {
         this.createSaleUseCase = createSaleUseCase;
         this.getSaleDetailUseCase = getSaleDetailUseCase;
         this.cancelSaleUseCase = cancelSaleUseCase;
         this.listSalesUseCase = listSalesUseCase;
+        this.pageableFactory = pageableFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -87,10 +106,23 @@ public class SalesController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('venta.registrar', 'venta.anular')")
-    public ApiResponse<List<SaleResponse>> listSales(@RequestParam(required = false) SaleStatus status) {
+    public ApiResponse<PageResponse<SaleListResponse>> listSales(
+            @RequestParam(required = false) SaleStatus status,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "createdAt"),
+                ALLOWED_SORTS
+        );
+
         return responseFactory.success(
                 "Ventas obtenidas correctamente.",
-                listSalesUseCase.execute(status)
+                PageResponse.from(listSalesUseCase.execute(status, pageable))
         );
     }
 

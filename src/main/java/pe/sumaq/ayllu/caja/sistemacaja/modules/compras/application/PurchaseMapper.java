@@ -4,10 +4,35 @@ import org.springframework.stereotype.Component;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.PurchaseEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseItemResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseListResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseResponse;
 
 @Component
 public class PurchaseMapper {
+
+    public PurchaseListResponse toListResponse(PurchaseEntity purchaseEntity) {
+        return new PurchaseListResponse(
+                purchaseEntity.getId(),
+                purchaseEntity.getOperationalContext().getId(),
+                purchaseEntity.getOperationalContext().getName(),
+                purchaseEntity.getProvider().getId(),
+                purchaseEntity.getProvider().getName(),
+                purchaseEntity.getPurchasedBy().getUsername(),
+                purchaseEntity.getStatus(),
+                purchaseEntity.getPurchaseDate(),
+                purchaseEntity.getDocumentType(),
+                purchaseEntity.getDocumentNumber(),
+                purchaseEntity.getPaymentMethod(),
+                purchaseEntity.getSubtotalAmount(),
+                purchaseEntity.getTotalAmount(),
+                purchaseEntity.getObservation(),
+                purchaseEntity.getCreatedAt(),
+                purchaseEntity.getCancelledAt(),
+                purchaseEntity.getCancelledBy() != null ? purchaseEntity.getCancelledBy().getUsername() : null,
+                purchaseEntity.getCancellationReason(),
+                purchaseEntity.getItems().size()
+        );
+    }
 
     public PurchaseResponse toResponse(PurchaseEntity purchaseEntity) {
         return new PurchaseResponse(

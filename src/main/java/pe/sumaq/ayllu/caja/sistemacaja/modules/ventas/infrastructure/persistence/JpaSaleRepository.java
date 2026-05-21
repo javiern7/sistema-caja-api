@@ -2,13 +2,15 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistenc
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.domain.SaleStatus;
 
 public interface JpaSaleRepository extends JpaRepository<SaleEntity, Long> {
 
-    List<SaleEntity> findAllByStatusOrderByCreatedAtDesc(SaleStatus status);
+    Page<SaleEntity> findAllByStatus(SaleStatus status, Pageable pageable);
 
     List<SaleEntity> findAllByOrderByCreatedAtDesc();
 }

@@ -1,13 +1,13 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.domain.PurchaseStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseListResponse;
 
 @Service
 public class ListPurchasesUseCase {
@@ -21,12 +21,13 @@ public class ListPurchasesUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<PurchaseResponse> execute(PurchaseStatus status) {
-        return (status == null
-                ? jpaPurchaseRepository.findAllByOrderByCreatedAtDesc()
-                : jpaPurchaseRepository.findAllByStatusOrderByCreatedAtDesc(status))
-                .stream()
-                .map(purchaseMapper::toResponse)
-                .toList();
+    public Page<PurchaseListResponse> execute(PurchaseStatus status, Pageable pageable) {
+        if (status == null) {
+            return jpaPurchaseRepository.findAll(pageable)
+                    .map(purchaseMapper::toListResponse);
+        }
+
+        return jpaPurchaseRepository.findAllByStatus(status, pageable)
+                .map(purchaseMapper::toListResponse);
     }
 }

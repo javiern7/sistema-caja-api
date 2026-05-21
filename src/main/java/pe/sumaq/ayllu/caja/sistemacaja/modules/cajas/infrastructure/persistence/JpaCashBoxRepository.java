@@ -3,11 +3,12 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashBoxStatus;
 
-public interface JpaCashBoxRepository extends JpaRepository<CashBoxEntity, Long> {
+public interface JpaCashBoxRepository extends JpaRepository<CashBoxEntity, Long>, JpaSpecificationExecutor<CashBoxEntity> {
 
     boolean existsByOpenedByIdAndStatus(Long userId, CashBoxStatus status);
 
