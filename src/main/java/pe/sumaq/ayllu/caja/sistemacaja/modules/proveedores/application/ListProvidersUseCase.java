@@ -1,7 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
@@ -16,7 +16,7 @@ public class ListProvidersUseCase {
         this.jpaProviderRepository = jpaProviderRepository;
     }
 
-    public List<ProviderEntity> execute() {
-        return jpaProviderRepository.findAll();
+    public Page<ProviderEntity> execute(Pageable pageable) {
+        return jpaProviderRepository.findAll(pageable);
     }
 }

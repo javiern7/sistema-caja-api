@@ -1,10 +1,11 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.JpaAuditOperationRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.AuditOperationSpecifications;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.presentation.dto.AuditOperationResponse;
 
 @Service
@@ -21,12 +22,11 @@ public class ListAuditOperationsUseCase {
         this.auditOperationMapper = auditOperationMapper;
     }
 
-    public List<AuditOperationResponse> execute(String module, String username) {
-        return jpaAuditOperationRepository.findAllByOrderByOccurredAtDesc()
-                .stream()
-                .filter(item -> module == null || item.getModule().equalsIgnoreCase(module))
-                .filter(item -> username == null || item.getUsername().equalsIgnoreCase(username))
-                .map(auditOperationMapper::toResponse)
-                .toList();
+    public Page<AuditOperationResponse> execute(String module, String username, Pageable pageable) {
+        return jpaAuditOperationRepository.findAll(
+                        AuditOperationSpecifications.withFilters(module, username),
+                        pageable
+                )
+                .map(auditOperationMapper::toResponse);
     }
 }

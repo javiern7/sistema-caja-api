@@ -1,8 +1,11 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.presentation;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -11,10 +14,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.application.CreateUserUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.application.ListUsersUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.application.UpdateUserStatusUseCase;
@@ -30,11 +36,18 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.presentation.dto.UserRes
 @PreAuthorize("hasAuthority('usuario.gestionar')")
 public class UsersController {
 
+    private static final Set<String> ALLOWED_SORTS = Set.of(
+            "id",
+            "username",
+            "active"
+    );
+
     private final ListUsersUseCase listUsersUseCase;
     private final CreateUserUseCase createUserUseCase;
     private final UpdateUserUseCase updateUserUseCase;
     private final UpdateUserStatusUseCase updateUserStatusUseCase;
     private final UserMapper userMapper;
+    private final PageableFactory pageableFactory;
     private final ApiResponseFactory responseFactory;
 
     public UsersController(
@@ -43,6 +56,7 @@ public class UsersController {
             UpdateUserUseCase updateUserUseCase,
             UpdateUserStatusUseCase updateUserStatusUseCase,
             UserMapper userMapper,
+            PageableFactory pageableFactory,
             ApiResponseFactory responseFactory
     ) {
         this.listUsersUseCase = listUsersUseCase;
@@ -50,14 +64,27 @@ public class UsersController {
         this.updateUserUseCase = updateUserUseCase;
         this.updateUserStatusUseCase = updateUserStatusUseCase;
         this.userMapper = userMapper;
+        this.pageableFactory = pageableFactory;
         this.responseFactory = responseFactory;
     }
 
     @GetMapping
-    public ApiResponse<List<UserResponse>> listUsers() {
+    public ApiResponse<PageResponse<UserResponse>> listUsers(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.ASC, "username"),
+                ALLOWED_SORTS
+        );
+
         return responseFactory.success(
                 "Usuarios obtenidos correctamente.",
-                listUsersUseCase.execute().stream().map(userMapper::toResponse).toList()
+                PageResponse.from(listUsersUseCase.execute(pageable).map(userMapper::toResponse))
         );
     }
 

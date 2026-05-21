@@ -1,10 +1,11 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.infrastructure.persistence.JpaReportHistoryRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.infrastructure.persistence.ReportHistorySpecifications;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.ReportHistoryResponse;
 
 @Service
@@ -16,10 +17,11 @@ public class GetReportHistoryUseCase {
         this.jpaReportHistoryRepository = jpaReportHistoryRepository;
     }
 
-    public List<ReportHistoryResponse> execute(String reportType, String generatedBy) {
-        return jpaReportHistoryRepository.findAllByOrderByGeneratedAtDesc().stream()
-                .filter(item -> reportType == null || item.getReportType().equalsIgnoreCase(reportType))
-                .filter(item -> generatedBy == null || item.getGeneratedBy().equalsIgnoreCase(generatedBy))
+    public Page<ReportHistoryResponse> execute(String reportType, String generatedBy, Pageable pageable) {
+        return jpaReportHistoryRepository.findAll(
+                        ReportHistorySpecifications.withFilters(reportType, generatedBy),
+                        pageable
+                )
                 .map(item -> new ReportHistoryResponse(
                         item.getId(),
                         item.getReportType(),
@@ -27,7 +29,6 @@ public class GetReportHistoryUseCase {
                         item.getGeneratedBy(),
                         item.getFilters(),
                         item.getGeneratedAt()
-                ))
-                .toList();
+                ));
     }
 }

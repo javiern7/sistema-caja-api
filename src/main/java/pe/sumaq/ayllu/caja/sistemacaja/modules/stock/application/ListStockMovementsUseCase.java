@@ -1,7 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.stock.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
@@ -21,10 +21,8 @@ public class ListStockMovementsUseCase {
         this.stockMapper = stockMapper;
     }
 
-    public List<StockMovementResponse> execute() {
-        return jpaStockMovementRepository.findAllByOrderByOccurredAtDesc()
-                .stream()
-                .map(stockMapper::toMovementResponse)
-                .toList();
+    public Page<StockMovementResponse> execute(Pageable pageable) {
+        return jpaStockMovementRepository.findAllByOrderByOccurredAtDesc(pageable)
+                .map(stockMapper::toMovementResponse);
     }
 }

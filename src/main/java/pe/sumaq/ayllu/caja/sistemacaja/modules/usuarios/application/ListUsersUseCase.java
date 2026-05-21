@@ -1,7 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
@@ -16,7 +16,7 @@ public class ListUsersUseCase {
         this.jpaUserRepository = jpaUserRepository;
     }
 
-    public List<UserEntity> execute() {
-        return jpaUserRepository.findAll();
+    public Page<UserEntity> execute(Pageable pageable) {
+        return jpaUserRepository.findAll(pageable);
     }
 }

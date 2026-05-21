@@ -228,7 +228,7 @@ class SalesFlowIntegrationTest {
     private int fetchReportHistoryCount(String token) throws Exception {
         String response = performGet("/api/v1/reportes/historial", token);
         JsonNode items = read(response).path("data");
-        return items.isArray() ? items.size() : 0;
+        return items.path("items").isArray() ? items.path("items").size() : 0;
     }
 
     private String performGet(String url, String token) throws Exception {

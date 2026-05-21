@@ -1,7 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.productos.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
@@ -16,10 +16,10 @@ public class ListProductsUseCase {
         this.jpaProductRepository = jpaProductRepository;
     }
 
-    public List<ProductEntity> execute(Boolean active) {
+    public Page<ProductEntity> execute(Boolean active, Pageable pageable) {
         if (active == null) {
-            return jpaProductRepository.findAll();
+            return jpaProductRepository.findAll(pageable);
         }
-        return jpaProductRepository.findAllByActive(active);
+        return jpaProductRepository.findAllByActive(active, pageable);
     }
 }

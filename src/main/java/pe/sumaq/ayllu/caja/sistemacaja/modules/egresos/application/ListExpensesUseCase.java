@@ -1,7 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +20,8 @@ public class ListExpensesUseCase {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseResponse> execute() {
-        return jpaExpenseRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(expenseMapper::toResponse)
-                .toList();
+    public Page<ExpenseResponse> execute(Pageable pageable) {
+        return jpaExpenseRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(expenseMapper::toResponse);
     }
 }

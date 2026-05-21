@@ -3,6 +3,8 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.p
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.domain.OperationalContext;
@@ -32,6 +34,12 @@ public class OperationalContextPersistenceAdapter implements OperationalContextR
                 .stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Override
+    public Page<OperationalContext> findAll(Pageable pageable) {
+        return jpaOperationalContextRepository.findAll(pageable)
+                .map(this::toDomain);
     }
 
     @Override

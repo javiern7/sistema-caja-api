@@ -2,10 +2,13 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,6 +24,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.GetReportHistoryUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.ReportExportService;
@@ -40,20 +45,31 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.Utility
 @SecurityRequirement(name = "bearerAuth")
 public class ReportsController {
 
+    private static final Set<String> ALLOWED_REPORT_HISTORY_SORTS = Set.of(
+            "id",
+            "reportType",
+            "format",
+            "generatedBy",
+            "generatedAt"
+    );
+
     private final ReportsQueryService reportsQueryService;
     private final GetReportHistoryUseCase getReportHistoryUseCase;
     private final ReportExportService reportExportService;
+    private final PageableFactory pageableFactory;
     private final ApiResponseFactory responseFactory;
 
     public ReportsController(
             ReportsQueryService reportsQueryService,
             GetReportHistoryUseCase getReportHistoryUseCase,
             ReportExportService reportExportService,
+            PageableFactory pageableFactory,
             ApiResponseFactory responseFactory
     ) {
         this.reportsQueryService = reportsQueryService;
         this.getReportHistoryUseCase = getReportHistoryUseCase;
         this.reportExportService = reportExportService;
+        this.pageableFactory = pageableFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -248,13 +264,24 @@ public class ReportsController {
     @GetMapping("/historial")
     @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.exportar')")
     @Operation(summary = "Historial de reportes", description = "Consulta trazabilidad de reportes generados por usuario, tipo y filtros.")
-    public ApiResponse<List<ReportHistoryResponse>> getReportHistory(
+    public ApiResponse<PageResponse<ReportHistoryResponse>> getReportHistory(
             @RequestParam(required = false) String reportType,
-            @RequestParam(required = false) String generatedBy
+            @RequestParam(required = false) String generatedBy,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
     ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "generatedAt"),
+                ALLOWED_REPORT_HISTORY_SORTS
+        );
+
         return responseFactory.success(
                 "Historial de reportes obtenido correctamente.",
-                getReportHistoryUseCase.execute(reportType, generatedBy)
+                PageResponse.from(getReportHistoryUseCase.execute(reportType, generatedBy, pageable))
         );
     }
 

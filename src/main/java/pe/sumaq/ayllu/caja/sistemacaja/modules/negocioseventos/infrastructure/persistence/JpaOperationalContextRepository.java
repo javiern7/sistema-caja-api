@@ -3,6 +3,8 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.p
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.domain.OperationalContextStatus;
@@ -10,6 +12,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.domain.Operationa
 public interface JpaOperationalContextRepository extends JpaRepository<OperationalContextEntity, Long> {
 
     List<OperationalContextEntity> findAllByStatusOrderByStartDateAsc(OperationalContextStatus status);
+
+    Page<OperationalContextEntity> findAll(Pageable pageable);
 
     Optional<OperationalContextEntity> findByCode(String code);
 }

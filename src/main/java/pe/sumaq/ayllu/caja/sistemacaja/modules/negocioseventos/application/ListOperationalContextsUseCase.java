@@ -1,7 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.domain.OperationalContext;
@@ -16,7 +16,7 @@ public class ListOperationalContextsUseCase {
         this.operationalContextRepository = operationalContextRepository;
     }
 
-    public List<OperationalContext> execute() {
-        return operationalContextRepository.findAll();
+    public Page<OperationalContext> execute(Pageable pageable) {
+        return operationalContextRepository.findAll(pageable);
     }
 }
