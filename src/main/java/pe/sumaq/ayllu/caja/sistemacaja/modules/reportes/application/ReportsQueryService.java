@@ -5,16 +5,24 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.CashBoxEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.CashBoxReportSpecifications;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.PurchaseReportSpecifications;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.domain.PurchaseStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.PurchaseEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.ExpenseEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.ExpenseReportSpecifications;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.JpaExpenseRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.ProductEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.domain.ReportFormat;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.domain.ReportType;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.CashReportResponse;
@@ -33,6 +41,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.domain.SaleStatus;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.JpaSaleRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.SaleEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.SaleReportSpecifications;
 
 @Service
 public class ReportsQueryService {
@@ -44,6 +53,7 @@ public class ReportsQueryService {
     private final JpaPurchaseRepository jpaPurchaseRepository;
     private final JpaExpenseRepository jpaExpenseRepository;
     private final JpaStockCurrentRepository jpaStockCurrentRepository;
+    private final JpaProductRepository jpaProductRepository;
     private final ReportHistoryRegistrar reportHistoryRegistrar;
 
     public ReportsQueryService(
@@ -52,6 +62,7 @@ public class ReportsQueryService {
             JpaPurchaseRepository jpaPurchaseRepository,
             JpaExpenseRepository jpaExpenseRepository,
             JpaStockCurrentRepository jpaStockCurrentRepository,
+            JpaProductRepository jpaProductRepository,
             ReportHistoryRegistrar reportHistoryRegistrar
     ) {
         this.jpaSaleRepository = jpaSaleRepository;
@@ -59,6 +70,7 @@ public class ReportsQueryService {
         this.jpaPurchaseRepository = jpaPurchaseRepository;
         this.jpaExpenseRepository = jpaExpenseRepository;
         this.jpaStockCurrentRepository = jpaStockCurrentRepository;
+        this.jpaProductRepository = jpaProductRepository;
         this.reportHistoryRegistrar = reportHistoryRegistrar;
     }
 
@@ -294,17 +306,135 @@ public class ReportsQueryService {
         return response;
     }
 
+    @Transactional(readOnly = true)
+    public Page<SalesReportRowResponse> getSalesReportPage(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            Long operationalContextId,
+            Pageable pageable
+    ) {
+        return jpaSaleRepository.findAll(
+                        SaleReportSpecifications.forReport(fechaDesde, fechaHasta, operationalContextId),
+                        pageable
+                )
+                .map(item -> new SalesReportRowResponse(
+                        item.getId(),
+                        item.getCreatedAt(),
+                        item.getOperationalContext().getId(),
+                        item.getOperationalContext().getName(),
+                        item.getSoldBy().getUsername(),
+                        item.getInternalReceiptSeries() + "-" + item.getInternalReceiptNumber(),
+                        item.getTotalAmount(),
+                        item.getItems().size()
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CashReportRowResponse> getCashReportPage(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            Long operationalContextId,
+            Pageable pageable
+    ) {
+        return jpaCashBoxRepository.findAll(
+                        CashBoxReportSpecifications.forReport(fechaDesde, fechaHasta, operationalContextId),
+                        pageable
+                )
+                .map(item -> new CashReportRowResponse(
+                        item.getId(),
+                        item.getOperationalContext().getId(),
+                        item.getOperationalContext().getName(),
+                        item.getOpenedBy().getUsername(),
+                        item.getClosedBy() == null ? null : item.getClosedBy().getUsername(),
+                        item.getStatus(),
+                        safe(item.getOpeningAmount()),
+                        safe(item.getExpectedAmount()),
+                        safe(item.getCountedAmount()),
+                        safe(item.getDifferenceAmount()),
+                        item.getOpenedAt(),
+                        item.getClosedAt()
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PurchaseReportRowResponse> getPurchasesReportPage(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            Long operationalContextId,
+            Pageable pageable
+    ) {
+        return jpaPurchaseRepository.findAll(
+                        PurchaseReportSpecifications.forReport(fechaDesde, fechaHasta, operationalContextId),
+                        pageable
+                )
+                .map(item -> new PurchaseReportRowResponse(
+                        item.getId(),
+                        item.getPurchaseDate(),
+                        item.getOperationalContext().getId(),
+                        item.getOperationalContext().getName(),
+                        item.getProvider().getName(),
+                        item.getStatus().name(),
+                        calculateEffectivePurchaseAmount(item)
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ExpenseReportRowResponse> getExpensesReportPage(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            Long operationalContextId,
+            Pageable pageable
+    ) {
+        return jpaExpenseRepository.findAll(
+                        ExpenseReportSpecifications.forReport(fechaDesde, fechaHasta, operationalContextId),
+                        pageable
+                )
+                .map(item -> new ExpenseReportRowResponse(
+                        item.getId(),
+                        item.getExpenseDate(),
+                        item.getOperationalContext().getId(),
+                        item.getOperationalContext().getName(),
+                        item.getExpenseType().name(),
+                        item.getCategory(),
+                        item.getDescription(),
+                        item.getAmount(),
+                        item.getRecordedBy().getUsername()
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<StockReportRowResponse> getStockReportPage(Pageable pageable) {
+        Page<ProductEntity> productsPage = jpaProductRepository.findAll(pageable);
+        List<Long> productIds = productsPage.getContent().stream()
+                .map(ProductEntity::getId)
+                .toList();
+
+        java.util.Map<Long, StockCurrentEntity> stockByProductId = jpaStockCurrentRepository.findAllByProductIdIn(productIds)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(StockCurrentEntity::getProductId, item -> item));
+
+        List<StockReportRowResponse> rows = productsPage.getContent().stream()
+                .map(product -> toStockRow(product, stockByProductId.get(product.getId())))
+                .toList();
+
+        return new PageImpl<>(rows, pageable, productsPage.getTotalElements());
+    }
+
     private StockReportRowResponse toStockRow(StockCurrentEntity item) {
+        return toStockRow(item.getProduct(), item);
+    }
+
+    private StockReportRowResponse toStockRow(ProductEntity product, StockCurrentEntity currentStock) {
         return new StockReportRowResponse(
-                item.getProductId(),
-                item.getProduct().getCode(),
-                item.getProduct().getName(),
-                item.getProduct().getUnitOfMeasure(),
-                item.getProduct().isActive(),
-                item.getProduct().isStockControlled(),
-                item.getProduct().getMinimumStock(),
-                item.getCurrentStock(),
-                item.getUpdatedAt()
+                product.getId(),
+                product.getCode(),
+                product.getName(),
+                product.getUnitOfMeasure(),
+                product.isActive(),
+                product.isStockControlled(),
+                product.getMinimumStock(),
+                currentStock == null ? ZERO : currentStock.getCurrentStock(),
+                currentStock == null ? null : currentStock.getUpdatedAt()
         );
     }
 

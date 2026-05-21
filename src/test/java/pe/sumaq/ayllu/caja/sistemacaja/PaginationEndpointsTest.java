@@ -45,6 +45,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.pers
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.RoleEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockCurrentRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockCurrentEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockMovementEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
@@ -266,6 +267,40 @@ class PaginationEndpointsTest {
     }
 
     @Test
+    void currentStockEndpointShouldReturnPaginatedResponse() throws Exception {
+        ProductEntity productEntity = new ProductEntity();
+        productEntity.setId(15L);
+        productEntity.setCode("PROD-015");
+        productEntity.setName("Azucar rubia");
+        productEntity.setUnitOfMeasure("KG");
+        productEntity.setMinimumStock(new BigDecimal("3.00"));
+        productEntity.setStockControlled(true);
+        productEntity.setActive(true);
+
+        StockCurrentEntity stockCurrentEntity = new StockCurrentEntity();
+        stockCurrentEntity.setProductId(15L);
+        stockCurrentEntity.setProduct(productEntity);
+        stockCurrentEntity.setCurrentStock(new BigDecimal("12.50"));
+        stockCurrentEntity.setUpdatedAt(LocalDateTime.of(2026, 5, 20, 9, 0));
+
+        when(jpaProductRepository.findAll(any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(productEntity),
+                        PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "name")),
+                        1
+                ));
+        when(jpaStockCurrentRepository.findAllByProductIdIn(any()))
+                .thenReturn(List.of(stockCurrentEntity));
+
+        mockMvc.perform(get("/api/v1/stock")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("stock.consultar"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].productCode").value("PROD-015"))
+                .andExpect(jsonPath("$.data.items[0].currentStock").value(12.50))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
     void stockMovementsEndpointShouldReturnPaginatedResponse() throws Exception {
         ProductEntity productEntity = new ProductEntity();
         productEntity.setId(9L);
@@ -426,6 +461,81 @@ class PaginationEndpointsTest {
                 .andExpect(jsonPath("$.data.items[0].id").value(61))
                 .andExpect(jsonPath("$.data.items[0].operationalContextCode").value("CTX-008"))
                 .andExpect(jsonPath("$.data.items[0].openedByUsername").value("cajero-central"))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    void salesReportDetailEndpointShouldReturnPaginatedResponse() throws Exception {
+        OperationalContextEntity operationalContext = new OperationalContextEntity();
+        operationalContext.setId(22L);
+        operationalContext.setName("Local Centro");
+
+        UserEntity soldBy = new UserEntity();
+        soldBy.setUsername("vendedor");
+
+        CashBoxEntity cashBoxEntity = new CashBoxEntity();
+        cashBoxEntity.setId(2L);
+
+        SaleEntity saleEntity = new SaleEntity();
+        saleEntity.setId(101L);
+        saleEntity.setOperationalContext(operationalContext);
+        saleEntity.setCashBox(cashBoxEntity);
+        saleEntity.setSoldBy(soldBy);
+        saleEntity.setStatus(SaleStatus.REGISTRADA);
+        saleEntity.setSubtotalAmount(new BigDecimal("18.00"));
+        saleEntity.setTotalAmount(new BigDecimal("20.00"));
+        saleEntity.setInternalReceiptSeries("B001");
+        saleEntity.setInternalReceiptNumber(123L);
+        saleEntity.setCreatedAt(LocalDateTime.of(2026, 5, 20, 10, 0));
+
+        when(jpaSaleRepository.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(saleEntity),
+                        PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt")),
+                        1
+                ));
+
+        mockMvc.perform(get("/api/v1/reportes/ventas/detalle")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("reporte.ventas"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].saleId").value(101))
+                .andExpect(jsonPath("$.data.items[0].internalReceipt").value("B001-123"))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    void cashReportDetailEndpointShouldReturnPaginatedResponse() throws Exception {
+        OperationalContextEntity operationalContext = new OperationalContextEntity();
+        operationalContext.setId(23L);
+        operationalContext.setName("Evento Norte");
+
+        UserEntity openedBy = new UserEntity();
+        openedBy.setUsername("apertura");
+
+        CashBoxEntity cashBoxEntity = new CashBoxEntity();
+        cashBoxEntity.setId(111L);
+        cashBoxEntity.setOperationalContext(operationalContext);
+        cashBoxEntity.setOpenedBy(openedBy);
+        cashBoxEntity.setStatus(CashBoxStatus.CERRADA);
+        cashBoxEntity.setOpeningAmount(new BigDecimal("80.00"));
+        cashBoxEntity.setExpectedAmount(new BigDecimal("120.00"));
+        cashBoxEntity.setCountedAmount(new BigDecimal("118.00"));
+        cashBoxEntity.setDifferenceAmount(new BigDecimal("-2.00"));
+        cashBoxEntity.setOpenedAt(LocalDateTime.of(2026, 5, 20, 8, 0));
+        cashBoxEntity.setClosedAt(LocalDateTime.of(2026, 5, 20, 18, 0));
+
+        when(jpaCashBoxRepository.findAll(any(Specification.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(
+                        List.of(cashBoxEntity),
+                        PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "openedAt")),
+                        1
+                ));
+
+        mockMvc.perform(get("/api/v1/reportes/caja/detalle")
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("reporte.caja"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].cashBoxId").value(111))
+                .andExpect(jsonPath("$.data.items[0].status").value("CERRADA"))
                 .andExpect(jsonPath("$.data.totalElements").value(1));
     }
 

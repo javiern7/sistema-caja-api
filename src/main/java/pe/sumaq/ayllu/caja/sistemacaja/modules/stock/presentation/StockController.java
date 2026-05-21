@@ -25,6 +25,16 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.presentation.dto.StockMovem
 @PreAuthorize("hasAuthority('stock.consultar')")
 public class StockController {
 
+    private static final Set<String> ALLOWED_CURRENT_STOCK_SORTS = Set.of(
+            "id",
+            "code",
+            "name",
+            "unitOfMeasure",
+            "stockControlled",
+            "active",
+            "minimumStock"
+    );
+
     private static final Set<String> ALLOWED_MOVEMENT_SORTS = Set.of(
             "id",
             "productId",
@@ -51,10 +61,23 @@ public class StockController {
     }
 
     @GetMapping
-    public ApiResponse<List<StockCurrentResponse>> listCurrentStock() {
+    public ApiResponse<PageResponse<StockCurrentResponse>> listCurrentStock(
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.ASC, "name"),
+                ALLOWED_CURRENT_STOCK_SORTS
+        );
+
         return responseFactory.success(
                 "Stock actual obtenido correctamente.",
-                listCurrentStockUseCase.execute()
+                PageResponse.from(listCurrentStockUseCase.execute(active, pageable))
         );
     }
 

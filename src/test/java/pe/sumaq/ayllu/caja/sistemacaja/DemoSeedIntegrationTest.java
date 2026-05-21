@@ -48,15 +48,18 @@ class DemoSeedIntegrationTest {
         String token = loginAsAdmin();
         JsonNode contexts = read(performGet("/api/v1/contextos-operativos", token)).path("data");
         JsonNode products = read(performGet("/api/v1/productos", token)).path("data").path("items");
+        JsonNode currentStock = read(performGet("/api/v1/stock", token)).path("data").path("items");
         JsonNode purchases = read(performGet("/api/v1/compras", token)).path("data").path("items");
         JsonNode sales = read(performGet("/api/v1/ventas", token)).path("data").path("items");
         JsonNode expenses = read(performGet("/api/v1/egresos", token)).path("data").path("items");
         JsonNode cashBoxes = read(performGet("/api/v1/cajas", token)).path("data").path("items");
         JsonNode salesReport = read(performGet("/api/v1/reportes/ventas", token)).path("data");
+        JsonNode salesReportPage = read(performGet("/api/v1/reportes/ventas/detalle", token)).path("data");
         JsonNode history = read(performGet("/api/v1/reportes/historial", token)).path("data");
 
         assertThat(contexts.isArray()).isTrue();
         assertThat(products.isArray()).isTrue();
+        assertThat(currentStock.isArray()).isTrue();
         assertThat(purchases.isArray()).isTrue();
         assertThat(sales.isArray()).isTrue();
         assertThat(expenses.isArray()).isTrue();
@@ -65,11 +68,14 @@ class DemoSeedIntegrationTest {
         assertThat(contexts).anySatisfy(item -> assertThat(item.path("code").asText()).isEqualTo("DEMO-NEG-001"));
         assertThat(products).anySatisfy(item -> assertThat(item.path("code").asText()).isEqualTo("DEMO-PROD-CAFE"));
         assertThat(products).anySatisfy(item -> assertThat(item.path("code").asText()).isEqualTo("DEMO-PROD-SAND"));
+        assertThat(currentStock).hasSizeGreaterThanOrEqualTo(2);
         assertThat(purchases).hasSizeGreaterThanOrEqualTo(1);
         assertThat(sales).hasSizeGreaterThanOrEqualTo(1);
         assertThat(expenses).hasSizeGreaterThanOrEqualTo(1);
         assertThat(cashBoxes).anySatisfy(item -> assertThat(item.path("status").asText()).isEqualTo("CERRADA"));
         assertThat(salesReport.path("totalSales").asInt()).isGreaterThanOrEqualTo(1);
+        assertThat(salesReportPage.path("items").isArray()).isTrue();
+        assertThat(salesReportPage.path("items").size()).isGreaterThanOrEqualTo(1);
         assertThat(history.path("items").isArray()).isTrue();
         assertThat(history.path("items").size()).isGreaterThanOrEqualTo(6);
     }

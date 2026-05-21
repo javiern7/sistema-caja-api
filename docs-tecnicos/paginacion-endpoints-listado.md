@@ -121,6 +121,7 @@ Esto evita inconsistencias entre una página parcial y los totales globales del 
 - `GET /api/v1/reportes/historial`
 - `GET /api/v1/egresos`
 - `GET /api/v1/productos`
+- `GET /api/v1/stock`
 - `GET /api/v1/stock/movimientos`
 - `GET /api/v1/proveedores`
 - `GET /api/v1/usuarios`
@@ -129,6 +130,11 @@ Esto evita inconsistencias entre una página parcial y los totales globales del 
 - `GET /api/v1/ventas`
 - `GET /api/v1/compras`
 - `GET /api/v1/cajas`
+- `GET /api/v1/reportes/ventas/detalle`
+- `GET /api/v1/reportes/caja/detalle`
+- `GET /api/v1/reportes/compras/detalle`
+- `GET /api/v1/reportes/egresos/detalle`
+- `GET /api/v1/reportes/stock/detalle`
 
 Estos endpoints ya:
 
@@ -154,6 +160,24 @@ Estos endpoints ya:
 - el listado ahora devuelve `CashBoxListResponse`
 - el detalle con `movements` se mantiene en `GET /api/v1/cajas/{cashBoxId}/resumen` y `GET /api/v1/cajas/activa`
 - se eliminó el filtrado en memoria y el patrón N+1 del endpoint de listado
+
+### Stock actual
+
+- el listado ahora devuelve `PageResponse<StockCurrentResponse>`
+- la paginación se resuelve sobre productos, y luego se enriquece solo la página solicitada con `stock_current`
+- se evita cargar todos los productos y todo el stock actual en memoria para cada consulta
+
+### Reportes tabulares
+
+- los endpoints resumen existentes se mantienen sin cambios:
+  - `/api/v1/reportes/ventas`
+  - `/api/v1/reportes/caja`
+  - `/api/v1/reportes/compras`
+  - `/api/v1/reportes/egresos`
+  - `/api/v1/reportes/stock`
+- se agregan endpoints `*/detalle` paginados para las tablas
+- esta separación evita mezclar totales globales del reporte con la página visible de la grilla
+- las consultas paginadas no registran historial por cada cambio de página; el historial sigue asociado a la generación de reportes resumen o exportables
 
 ## Guía para próximos endpoints
 

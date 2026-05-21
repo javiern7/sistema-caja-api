@@ -31,11 +31,16 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.GetReportHis
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.ReportExportService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.ReportsQueryService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.domain.ReportFormat;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.CashReportRowResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.CashReportResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.ExpenseReportRowResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.ExpenseReportResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.PurchaseReportRowResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.PurchaseReportResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.ReportHistoryResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.SalesReportRowResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.SalesReportResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.StockReportRowResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.StockReportResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.UtilityReportResponse;
 
@@ -44,6 +49,52 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.Utility
 @Tag(name = "Reportes", description = "Consultas operativas y exportaciones del MVP")
 @SecurityRequirement(name = "bearerAuth")
 public class ReportsController {
+
+    private static final Set<String> ALLOWED_SALES_REPORT_SORTS = Set.of(
+            "id",
+            "createdAt",
+            "totalAmount",
+            "internalReceiptNumber"
+    );
+
+    private static final Set<String> ALLOWED_CASH_REPORT_SORTS = Set.of(
+            "id",
+            "status",
+            "openingAmount",
+            "expectedAmount",
+            "countedAmount",
+            "differenceAmount",
+            "openedAt",
+            "closedAt"
+    );
+
+    private static final Set<String> ALLOWED_PURCHASE_REPORT_SORTS = Set.of(
+            "id",
+            "status",
+            "purchaseDate",
+            "documentNumber",
+            "totalAmount",
+            "createdAt"
+    );
+
+    private static final Set<String> ALLOWED_EXPENSE_REPORT_SORTS = Set.of(
+            "id",
+            "expenseDate",
+            "expenseType",
+            "category",
+            "amount",
+            "createdAt"
+    );
+
+    private static final Set<String> ALLOWED_STOCK_REPORT_SORTS = Set.of(
+            "id",
+            "code",
+            "name",
+            "unitOfMeasure",
+            "stockControlled",
+            "active",
+            "minimumStock"
+    );
 
     private static final Set<String> ALLOWED_REPORT_HISTORY_SORTS = Set.of(
             "id",
@@ -94,6 +145,31 @@ public class ReportsController {
         );
     }
 
+    @GetMapping("/ventas/detalle")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.ventas')")
+    @Operation(summary = "Detalle paginado de ventas", description = "Consulta filas del reporte de ventas con paginacion server-side.")
+    public ApiResponse<PageResponse<SalesReportRowResponse>> getSalesReportPage(
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long operationalContextId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "createdAt"),
+                ALLOWED_SALES_REPORT_SORTS
+        );
+
+        return responseFactory.success(
+                "Detalle paginado de ventas obtenido correctamente.",
+                PageResponse.from(reportsQueryService.getSalesReportPage(fechaDesde, fechaHasta, operationalContextId, pageable))
+        );
+    }
+
     @GetMapping("/caja")
     @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.caja')")
     @Operation(summary = "Reporte de caja", description = "Consulta aperturas, cierres, montos esperados y diferencias.")
@@ -112,6 +188,31 @@ public class ReportsController {
                         extractPrincipal(authentication).getUsername(),
                         ReportFormat.JSON
                 )
+        );
+    }
+
+    @GetMapping("/caja/detalle")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.caja')")
+    @Operation(summary = "Detalle paginado de caja", description = "Consulta filas del reporte de caja con paginacion server-side.")
+    public ApiResponse<PageResponse<CashReportRowResponse>> getCashReportPage(
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long operationalContextId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "openedAt"),
+                ALLOWED_CASH_REPORT_SORTS
+        );
+
+        return responseFactory.success(
+                "Detalle paginado de caja obtenido correctamente.",
+                PageResponse.from(reportsQueryService.getCashReportPage(fechaDesde, fechaHasta, operationalContextId, pageable))
         );
     }
 
@@ -136,6 +237,31 @@ public class ReportsController {
         );
     }
 
+    @GetMapping("/compras/detalle")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.compras')")
+    @Operation(summary = "Detalle paginado de compras", description = "Consulta filas del reporte de compras con paginacion server-side.")
+    public ApiResponse<PageResponse<PurchaseReportRowResponse>> getPurchasesReportPage(
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long operationalContextId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "purchaseDate").and(Sort.by(Sort.Direction.DESC, "id")),
+                ALLOWED_PURCHASE_REPORT_SORTS
+        );
+
+        return responseFactory.success(
+                "Detalle paginado de compras obtenido correctamente.",
+                PageResponse.from(reportsQueryService.getPurchasesReportPage(fechaDesde, fechaHasta, operationalContextId, pageable))
+        );
+    }
+
     @GetMapping("/egresos")
     @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.egresos')")
     @Operation(summary = "Reporte de egresos", description = "Consulta egresos administrativos y egresos de caja.")
@@ -157,6 +283,31 @@ public class ReportsController {
         );
     }
 
+    @GetMapping("/egresos/detalle")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.egresos')")
+    @Operation(summary = "Detalle paginado de egresos", description = "Consulta filas del reporte de egresos con paginacion server-side.")
+    public ApiResponse<PageResponse<ExpenseReportRowResponse>> getExpensesReportPage(
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long operationalContextId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.DESC, "expenseDate").and(Sort.by(Sort.Direction.DESC, "id")),
+                ALLOWED_EXPENSE_REPORT_SORTS
+        );
+
+        return responseFactory.success(
+                "Detalle paginado de egresos obtenido correctamente.",
+                PageResponse.from(reportsQueryService.getExpensesReportPage(fechaDesde, fechaHasta, operationalContextId, pageable))
+        );
+    }
+
     @GetMapping("/stock")
     @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.stock', 'stock.consultar')")
     @Operation(summary = "Reporte de stock", description = "Consulta stock actual global del MVP.")
@@ -175,6 +326,28 @@ public class ReportsController {
                         extractPrincipal(authentication).getUsername(),
                         ReportFormat.JSON
                 )
+        );
+    }
+
+    @GetMapping("/stock/detalle")
+    @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.stock', 'stock.consultar')")
+    @Operation(summary = "Detalle paginado de stock", description = "Consulta filas del reporte de stock con paginacion server-side.")
+    public ApiResponse<PageResponse<StockReportRowResponse>> getStockReportPage(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) List<String> sort
+    ) {
+        Pageable pageable = pageableFactory.create(
+                page,
+                size,
+                sort,
+                Sort.by(Sort.Direction.ASC, "name"),
+                ALLOWED_STOCK_REPORT_SORTS
+        );
+
+        return responseFactory.success(
+                "Detalle paginado de stock obtenido correctamente.",
+                PageResponse.from(reportsQueryService.getStockReportPage(pageable))
         );
     }
 

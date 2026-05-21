@@ -211,7 +211,7 @@ class SalesFlowIntegrationTest {
 
     private BigDecimal fetchCurrentStock(String token, long productId) throws Exception {
         String response = performGet("/api/v1/stock", token);
-        JsonNode items = read(response).path("data");
+        JsonNode items = read(response).path("data").path("items");
         for (JsonNode item : items) {
             if (item.path("productId").asLong() == productId) {
                 return new BigDecimal(item.path("currentStock").asText());

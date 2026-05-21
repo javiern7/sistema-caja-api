@@ -1,11 +1,13 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.stock.application;
 
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.ProductEntity;
@@ -30,14 +32,22 @@ public class ListCurrentStockUseCase {
         this.stockMapper = stockMapper;
     }
 
-    public List<StockCurrentResponse> execute() {
-        Map<Long, StockCurrentEntity> currentStockByProductId = jpaStockCurrentRepository.findAll()
+    @Transactional(readOnly = true)
+    public Page<StockCurrentResponse> execute(Boolean active, Pageable pageable) {
+        Page<ProductEntity> productsPage = active == null
+                ? jpaProductRepository.findAll(pageable)
+                : jpaProductRepository.findAllByActive(active, pageable);
+
+        Map<Long, StockCurrentEntity> currentStockByProductId = jpaStockCurrentRepository.findAllByProductIdIn(
+                        productsPage.getContent().stream()
+                                .map(ProductEntity::getId)
+                                .toList()
+                )
                 .stream()
                 .collect(Collectors.toMap(StockCurrentEntity::getProductId, Function.identity()));
 
-        return jpaProductRepository.findAll()
-                .stream()
-                .map(product -> stockMapper.toCurrentResponse(product, currentStockByProductId.get(product.getId())))
-                .toList();
+        return productsPage.map(product ->
+                stockMapper.toCurrentResponse(product, currentStockByProductId.get(product.getId()))
+        );
     }
 }
