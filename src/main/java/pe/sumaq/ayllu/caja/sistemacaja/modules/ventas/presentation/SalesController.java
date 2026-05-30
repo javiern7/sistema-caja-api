@@ -108,6 +108,7 @@ public class SalesController {
     @PreAuthorize("hasAnyAuthority('venta.registrar', 'venta.anular')")
     public ApiResponse<PageResponse<SaleListResponse>> listSales(
             @RequestParam(required = false) SaleStatus status,
+            @RequestParam(required = false) Long operationalContextId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) List<String> sort
@@ -122,7 +123,7 @@ public class SalesController {
 
         return responseFactory.success(
                 "Ventas obtenidas correctamente.",
-                PageResponse.from(listSalesUseCase.execute(status, pageable))
+                PageResponse.from(listSalesUseCase.execute(status, operationalContextId, pageable))
         );
     }
 

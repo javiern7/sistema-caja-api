@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.OperationalContextEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.ProductEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.domain.StockMovementType;
 
@@ -24,6 +25,10 @@ public class StockMovementEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "operational_context_id", nullable = false)
+    private OperationalContextEntity operationalContext;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
@@ -57,6 +62,14 @@ public class StockMovementEntity {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public OperationalContextEntity getOperationalContext() {
+        return operationalContext;
+    }
+
+    public void setOperationalContext(OperationalContextEntity operationalContext) {
+        this.operationalContext = operationalContext;
     }
 
     public ProductEntity getProduct() {

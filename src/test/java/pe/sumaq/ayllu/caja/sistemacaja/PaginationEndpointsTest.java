@@ -278,6 +278,7 @@ class PaginationEndpointsTest {
         productEntity.setActive(true);
 
         StockCurrentEntity stockCurrentEntity = new StockCurrentEntity();
+        stockCurrentEntity.setOperationalContextId(3L);
         stockCurrentEntity.setProductId(15L);
         stockCurrentEntity.setProduct(productEntity);
         stockCurrentEntity.setCurrentStock(new BigDecimal("12.50"));
@@ -289,11 +290,12 @@ class PaginationEndpointsTest {
                         PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "name")),
                         1
                 ));
-        when(jpaStockCurrentRepository.findAllByProductIdIn(any()))
+        when(jpaStockCurrentRepository.findAllByOperationalContextIdAndProductIdIn(any(), any()))
                 .thenReturn(List.of(stockCurrentEntity));
 
         mockMvc.perform(get("/api/v1/stock")
-                        .with(user("admin").authorities(new SimpleGrantedAuthority("stock.consultar"))))
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("stock.consultar")))
+                        .param("operationalContextId", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].productCode").value("PROD-015"))
                 .andExpect(jsonPath("$.data.items[0].currentStock").value(12.50))
@@ -307,8 +309,13 @@ class PaginationEndpointsTest {
         productEntity.setCode("INS-001");
         productEntity.setName("Insumo");
 
+        OperationalContextEntity operationalContext = new OperationalContextEntity();
+        operationalContext.setId(6L);
+        operationalContext.setName("Sucursal Norte");
+
         StockMovementEntity movementEntity = new StockMovementEntity();
         movementEntity.setId(31L);
+        movementEntity.setOperationalContext(operationalContext);
         movementEntity.setProduct(productEntity);
         movementEntity.setMovementType(pe.sumaq.ayllu.caja.sistemacaja.modules.stock.domain.StockMovementType.ENTRADA);
         movementEntity.setQuantity(new BigDecimal("12.00"));
@@ -318,7 +325,7 @@ class PaginationEndpointsTest {
         movementEntity.setOccurredAt(LocalDateTime.of(2026, 5, 20, 13, 0));
         movementEntity.setNote("Ingreso");
 
-        when(jpaStockMovementRepository.findAllByOrderByOccurredAtDesc(any(PageRequest.class)))
+        when(jpaStockMovementRepository.findAllByOperationalContextIdOrderByOccurredAtDesc(any(), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(
                         List.of(movementEntity),
                         PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "occurredAt")),
@@ -326,7 +333,8 @@ class PaginationEndpointsTest {
                 ));
 
         mockMvc.perform(get("/api/v1/stock/movimientos")
-                        .with(user("admin").authorities(new SimpleGrantedAuthority("stock.consultar"))))
+                        .with(user("admin").authorities(new SimpleGrantedAuthority("stock.consultar")))
+                        .param("operationalContextId", "6"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].id").value(31))
                 .andExpect(jsonPath("$.data.items[0].productCode").value("INS-001"))

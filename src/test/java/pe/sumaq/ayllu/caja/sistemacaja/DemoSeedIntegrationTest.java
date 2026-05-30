@@ -47,14 +47,15 @@ class DemoSeedIntegrationTest {
 
         String token = loginAsAdmin();
         JsonNode contexts = read(performGet("/api/v1/contextos-operativos", token)).path("data");
+        long operationalContextId = findOperationalContextId(contexts, "DEMO-NEG-001");
         JsonNode products = read(performGet("/api/v1/productos", token)).path("data").path("items");
-        JsonNode currentStock = read(performGet("/api/v1/stock", token)).path("data").path("items");
-        JsonNode purchases = read(performGet("/api/v1/compras", token)).path("data").path("items");
-        JsonNode sales = read(performGet("/api/v1/ventas", token)).path("data").path("items");
-        JsonNode expenses = read(performGet("/api/v1/egresos", token)).path("data").path("items");
+        JsonNode currentStock = read(performGet("/api/v1/stock?operationalContextId=" + operationalContextId, token)).path("data").path("items");
+        JsonNode purchases = read(performGet("/api/v1/compras?operationalContextId=" + operationalContextId, token)).path("data").path("items");
+        JsonNode sales = read(performGet("/api/v1/ventas?operationalContextId=" + operationalContextId, token)).path("data").path("items");
+        JsonNode expenses = read(performGet("/api/v1/egresos?operationalContextId=" + operationalContextId, token)).path("data").path("items");
         JsonNode cashBoxes = read(performGet("/api/v1/cajas", token)).path("data").path("items");
-        JsonNode salesReport = read(performGet("/api/v1/reportes/ventas", token)).path("data");
-        JsonNode salesReportPage = read(performGet("/api/v1/reportes/ventas/detalle", token)).path("data");
+        JsonNode salesReport = read(performGet("/api/v1/reportes/ventas?operationalContextId=" + operationalContextId, token)).path("data");
+        JsonNode salesReportPage = read(performGet("/api/v1/reportes/ventas/detalle?operationalContextId=" + operationalContextId, token)).path("data");
         JsonNode history = read(performGet("/api/v1/reportes/historial", token)).path("data");
 
         assertThat(contexts.isArray()).isTrue();
@@ -121,5 +122,14 @@ class DemoSeedIntegrationTest {
 
     private JsonNode read(String response) throws Exception {
         return objectMapper.readTree(response);
+    }
+
+    private long findOperationalContextId(JsonNode contexts, String code) {
+        for (JsonNode item : contexts) {
+            if (code.equals(item.path("code").asText())) {
+                return item.path("id").asLong();
+            }
+        }
+        throw new IllegalStateException("No se encontro el contexto operativo esperado.");
     }
 }

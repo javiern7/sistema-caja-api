@@ -49,7 +49,8 @@ class QaSeedIntegrationTest {
         JsonNode contexts = read(performGet("/api/v1/contextos-operativos", token)).path("data");
         JsonNode products = read(performGet("/api/v1/productos", token)).path("data").path("items");
         JsonNode providers = read(performGet("/api/v1/proveedores", token)).path("data").path("items");
-        JsonNode currentStock = read(performGet("/api/v1/stock", token)).path("data").path("items");
+        long operationalContextId = findOperationalContextId(token, "QA-BASE-001");
+        JsonNode currentStock = read(performGet("/api/v1/stock?operationalContextId=" + operationalContextId, token)).path("data").path("items");
         JsonNode purchases = read(performGet("/api/v1/compras", token)).path("data").path("items");
         JsonNode sales = read(performGet("/api/v1/ventas", token)).path("data").path("items");
         JsonNode expenses = read(performGet("/api/v1/egresos", token)).path("data").path("items");
@@ -97,7 +98,7 @@ class QaSeedIntegrationTest {
         assertThat(resetResult.path("appliedSeeds")).anySatisfy(item -> assertThat(item.asText()).isEqualTo("qa"));
 
         JsonNode contextsAfterReset = read(performGet("/api/v1/contextos-operativos", token)).path("data");
-        JsonNode stockAfterReset = read(performGet("/api/v1/stock", token)).path("data").path("items");
+        JsonNode stockAfterReset = read(performGet("/api/v1/stock?operationalContextId=" + operationalContextId, token)).path("data").path("items");
         JsonNode salesAfterReset = read(performGet("/api/v1/ventas", token)).path("data").path("items");
         JsonNode cashBoxesAfterReset = read(performGet("/api/v1/cajas", token)).path("data").path("items");
 
@@ -111,16 +112,16 @@ class QaSeedIntegrationTest {
     }
 
     @Test
-    void shouldExposeThatStockReportContextFilterIsNotAppliedYet() throws Exception {
+    void shouldFilterStockReportByOperationalContext() throws Exception {
         qaSeedRunner.run(EMPTY_ARGS);
 
         String token = loginAsAdmin();
         long operationalContextId = findOperationalContextId(token, "QA-BASE-001");
         JsonNode stockReport = read(performGet("/api/v1/reportes/stock?operationalContextId=" + operationalContextId, token)).path("data");
 
-        assertThat(stockReport.path("stockScope").asText()).isEqualTo("GLOBAL_MVP");
+        assertThat(stockReport.path("stockScope").asText()).isEqualTo("OPERATIONAL_CONTEXT");
         assertThat(stockReport.path("requestedOperationalContextId").asLong()).isEqualTo(operationalContextId);
-        assertThat(stockReport.path("operationalContextFilterApplied").asBoolean()).isFalse();
+        assertThat(stockReport.path("operationalContextFilterApplied").asBoolean()).isTrue();
     }
 
     private String loginAsAdmin() throws Exception {

@@ -43,18 +43,18 @@ class SalesFlowIntegrationTest {
         long providerId = createProvider(token);
 
         createPurchase(token, operationalContextId, providerId, productId);
-        assertThat(fetchCurrentStock(token, productId)).isEqualByComparingTo("10.00");
+        assertThat(fetchCurrentStock(token, operationalContextId, productId)).isEqualByComparingTo("10.00");
 
         long cashBoxId = openCashBox(token, operationalContextId);
         long saleId = createSale(token, operationalContextId, cashBoxId, productId);
 
-        assertThat(fetchCurrentStock(token, productId)).isEqualByComparingTo("8.00");
-        assertThat(fetchSalesReportTotal(token)).isEqualTo(1);
+        assertThat(fetchCurrentStock(token, operationalContextId, productId)).isEqualByComparingTo("8.00");
+        assertThat(fetchSalesReportTotal(token, operationalContextId)).isEqualTo(1);
 
         cancelSale(token, saleId);
 
-        assertThat(fetchCurrentStock(token, productId)).isEqualByComparingTo("10.00");
-        assertThat(fetchSalesReportTotal(token)).isZero();
+        assertThat(fetchCurrentStock(token, operationalContextId, productId)).isEqualByComparingTo("10.00");
+        assertThat(fetchSalesReportTotal(token, operationalContextId)).isZero();
         assertThat(fetchReportHistoryCount(token)).isGreaterThanOrEqualTo(2);
     }
 
@@ -209,8 +209,8 @@ class SalesFlowIntegrationTest {
         );
     }
 
-    private BigDecimal fetchCurrentStock(String token, long productId) throws Exception {
-        String response = performGet("/api/v1/stock", token);
+    private BigDecimal fetchCurrentStock(String token, long operationalContextId, long productId) throws Exception {
+        String response = performGet("/api/v1/stock?operationalContextId=" + operationalContextId, token);
         JsonNode items = read(response).path("data").path("items");
         for (JsonNode item : items) {
             if (item.path("productId").asLong() == productId) {
@@ -220,8 +220,8 @@ class SalesFlowIntegrationTest {
         throw new IllegalStateException("No se encontro el producto en el stock actual.");
     }
 
-    private int fetchSalesReportTotal(String token) throws Exception {
-        String response = performGet("/api/v1/reportes/ventas", token);
+    private int fetchSalesReportTotal(String token, long operationalContextId) throws Exception {
+        String response = performGet("/api/v1/reportes/ventas?operationalContextId=" + operationalContextId, token);
         return read(response).path("data").path("totalSales").asInt();
     }
 

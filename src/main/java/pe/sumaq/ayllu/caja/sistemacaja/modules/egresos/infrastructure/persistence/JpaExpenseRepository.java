@@ -12,4 +12,6 @@ public interface JpaExpenseRepository extends JpaRepository<ExpenseEntity, Long>
     List<ExpenseEntity> findAllByOrderByCreatedAtDesc();
 
     Page<ExpenseEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<ExpenseEntity> findAllByOperationalContextIdOrderByCreatedAtDesc(Long operationalContextId, Pageable pageable);
 }

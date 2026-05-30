@@ -26,11 +26,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.pe
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.OperationalContextEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.ProductEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.application.StockLedgerService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.domain.StockMovementType;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockCurrentRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockCurrentEntity;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockMovementEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.domain.SaleStatus;
@@ -50,8 +47,7 @@ public class CreateSaleUseCase {
 
     private final JpaSaleRepository jpaSaleRepository;
     private final JpaProductRepository jpaProductRepository;
-    private final JpaStockCurrentRepository jpaStockCurrentRepository;
-    private final JpaStockMovementRepository jpaStockMovementRepository;
+    private final StockLedgerService stockLedgerService;
     private final JpaCashBoxRepository jpaCashBoxRepository;
     private final JpaCashMovementRepository jpaCashMovementRepository;
     private final JpaOperationalContextRepository jpaOperationalContextRepository;
@@ -62,8 +58,7 @@ public class CreateSaleUseCase {
     public CreateSaleUseCase(
             JpaSaleRepository jpaSaleRepository,
             JpaProductRepository jpaProductRepository,
-            JpaStockCurrentRepository jpaStockCurrentRepository,
-            JpaStockMovementRepository jpaStockMovementRepository,
+            StockLedgerService stockLedgerService,
             JpaCashBoxRepository jpaCashBoxRepository,
             JpaCashMovementRepository jpaCashMovementRepository,
             JpaOperationalContextRepository jpaOperationalContextRepository,
@@ -73,8 +68,7 @@ public class CreateSaleUseCase {
     ) {
         this.jpaSaleRepository = jpaSaleRepository;
         this.jpaProductRepository = jpaProductRepository;
-        this.jpaStockCurrentRepository = jpaStockCurrentRepository;
-        this.jpaStockMovementRepository = jpaStockMovementRepository;
+        this.stockLedgerService = stockLedgerService;
         this.jpaCashBoxRepository = jpaCashBoxRepository;
         this.jpaCashMovementRepository = jpaCashMovementRepository;
         this.jpaOperationalContextRepository = jpaOperationalContextRepository;
@@ -105,8 +99,6 @@ public class CreateSaleUseCase {
 
         BigDecimal subtotal = BigDecimal.ZERO;
         List<SaleItemEntity> saleItems = new ArrayList<>();
-        List<StockCurrentEntity> stockUpdates = new ArrayList<>();
-        List<StockMovementEntity> stockMovements = new ArrayList<>();
 
         for (SaleItemRequest itemRequest : request.items()) {
             ProductEntity product = productsById.get(itemRequest.productId());
@@ -129,36 +121,6 @@ public class CreateSaleUseCase {
             saleItem.setSubtotalAmount(itemSubtotal);
             saleItems.add(saleItem);
 
-            if (product.isStockControlled()) {
-                StockCurrentEntity stockCurrent = jpaStockCurrentRepository.findById(product.getId())
-                        .orElseThrow(() -> new BusinessException(
-                                ErrorCode.STOCK_INSUFICIENTE,
-                                HttpStatus.CONFLICT,
-                                "No existe stock disponible para el producto solicitado."
-                        ));
-
-                if (stockCurrent.getCurrentStock().compareTo(itemRequest.quantity()) < 0) {
-                    throw new BusinessException(
-                            ErrorCode.STOCK_INSUFICIENTE,
-                            HttpStatus.CONFLICT,
-                            "El producto no cuenta con stock suficiente."
-                    );
-                }
-
-                stockCurrent.setCurrentStock(stockCurrent.getCurrentStock().subtract(itemRequest.quantity()));
-                stockCurrent.setUpdatedAt(LocalDateTime.now());
-                stockUpdates.add(stockCurrent);
-
-                StockMovementEntity stockMovement = new StockMovementEntity();
-                stockMovement.setProduct(product);
-                stockMovement.setMovementType(StockMovementType.SALIDA);
-                stockMovement.setQuantity(itemRequest.quantity());
-                stockMovement.setReferenceType("VENTA");
-                stockMovement.setPerformedBy(principal.getUsername());
-                stockMovement.setOccurredAt(LocalDateTime.now());
-                stockMovement.setNote("Salida por venta");
-                stockMovements.add(stockMovement);
-            }
         }
 
         if (subtotal.compareTo(BigDecimal.ZERO) < 0) {
@@ -212,9 +174,20 @@ public class CreateSaleUseCase {
         savedSale.setInternalReceiptNumber(savedSale.getId());
         SaleEntity finalizedSale = jpaSaleRepository.save(savedSale);
 
-        stockMovements.forEach(movement -> movement.setReferenceId(finalizedSale.getId().toString()));
-        jpaStockCurrentRepository.saveAll(stockUpdates);
-        jpaStockMovementRepository.saveAll(stockMovements);
+        for (SaleItemEntity item : finalizedSale.getItems()) {
+            if (item.getProduct().isStockControlled()) {
+                stockLedgerService.decreaseStock(
+                        operationalContext,
+                        item.getProduct(),
+                        item.getQuantity(),
+                        principal.getUsername(),
+                        StockMovementType.SALIDA,
+                        "VENTA",
+                        finalizedSale.getId().toString(),
+                        "Salida por venta"
+                );
+            }
+        }
 
         List<CashMovementEntity> cashMovements = request.payments().stream()
                 .map(payment -> buildCashMovement(cashBox, payment, principal.getUsername(), finalizedSale.getId()))

@@ -310,12 +310,12 @@ public class ReportsController {
 
     @GetMapping("/stock")
     @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.stock', 'stock.consultar')")
-    @Operation(summary = "Reporte de stock", description = "Consulta stock actual global del MVP. El parametro operationalContextId se conserva solo como referencia de trazabilidad y no aplica filtro real en esta etapa.")
+    @Operation(summary = "Reporte de stock", description = "Consulta stock actual del contexto operativo solicitado.")
     public ApiResponse<StockReportResponse> getStockReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,
             @RequestParam(required = false) LocalDate fechaHasta,
-            @RequestParam(required = false) Long operationalContextId
+            @RequestParam Long operationalContextId
     ) {
         return responseFactory.success(
                 "Reporte de stock obtenido correctamente.",
@@ -331,8 +331,9 @@ public class ReportsController {
 
     @GetMapping("/stock/detalle")
     @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.stock', 'stock.consultar')")
-    @Operation(summary = "Detalle paginado de stock", description = "Consulta filas del reporte de stock con paginacion server-side.")
+    @Operation(summary = "Detalle paginado de stock", description = "Consulta filas del reporte de stock del contexto operativo solicitado con paginacion server-side.")
     public ApiResponse<PageResponse<StockReportRowResponse>> getStockReportPage(
+            @RequestParam Long operationalContextId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) List<String> sort
@@ -347,7 +348,7 @@ public class ReportsController {
 
         return responseFactory.success(
                 "Detalle paginado de stock obtenido correctamente.",
-                PageResponse.from(reportsQueryService.getStockReportPage(pageable))
+                PageResponse.from(reportsQueryService.getStockReportPage(operationalContextId, pageable))
         );
     }
 

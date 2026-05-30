@@ -14,6 +14,10 @@ public interface JpaPurchaseRepository extends JpaRepository<PurchaseEntity, Lon
 
     Page<PurchaseEntity> findAllByStatus(PurchaseStatus status, Pageable pageable);
 
+    Page<PurchaseEntity> findAllByOperationalContextId(Long operationalContextId, Pageable pageable);
+
+    Page<PurchaseEntity> findAllByStatusAndOperationalContextId(PurchaseStatus status, Long operationalContextId, Pageable pageable);
+
     List<PurchaseEntity> findAllByOrderByCreatedAtDesc();
 
     Optional<PurchaseEntity> findByDocumentNumber(String documentNumber);

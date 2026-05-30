@@ -20,7 +20,12 @@ public class ListExpensesUseCase {
     }
 
     @Transactional(readOnly = true)
-    public Page<ExpenseResponse> execute(Pageable pageable) {
+    public Page<ExpenseResponse> execute(Long operationalContextId, Pageable pageable) {
+        if (operationalContextId != null) {
+            return jpaExpenseRepository.findAllByOperationalContextIdOrderByCreatedAtDesc(operationalContextId, pageable)
+                    .map(expenseMapper::toResponse);
+        }
+
         return jpaExpenseRepository.findAllByOrderByCreatedAtDesc(pageable)
                 .map(expenseMapper::toResponse);
     }

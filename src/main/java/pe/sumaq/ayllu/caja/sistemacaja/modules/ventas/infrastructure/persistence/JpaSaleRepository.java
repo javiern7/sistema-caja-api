@@ -13,5 +13,9 @@ public interface JpaSaleRepository extends JpaRepository<SaleEntity, Long>, JpaS
 
     Page<SaleEntity> findAllByStatus(SaleStatus status, Pageable pageable);
 
+    Page<SaleEntity> findAllByOperationalContextId(Long operationalContextId, Pageable pageable);
+
+    Page<SaleEntity> findAllByStatusAndOperationalContextId(SaleStatus status, Long operationalContextId, Pageable pageable);
+
     List<SaleEntity> findAllByOrderByCreatedAtDesc();
 }

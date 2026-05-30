@@ -33,12 +33,13 @@ public class ListCurrentStockUseCase {
     }
 
     @Transactional(readOnly = true)
-    public Page<StockCurrentResponse> execute(Boolean active, Pageable pageable) {
+    public Page<StockCurrentResponse> execute(Long operationalContextId, Boolean active, Pageable pageable) {
         Page<ProductEntity> productsPage = active == null
                 ? jpaProductRepository.findAll(pageable)
                 : jpaProductRepository.findAllByActive(active, pageable);
 
-        Map<Long, StockCurrentEntity> currentStockByProductId = jpaStockCurrentRepository.findAllByProductIdIn(
+        Map<Long, StockCurrentEntity> currentStockByProductId = jpaStockCurrentRepository.findAllByOperationalContextIdAndProductIdIn(
+                        operationalContextId,
                         productsPage.getContent().stream()
                                 .map(ProductEntity::getId)
                                 .toList()

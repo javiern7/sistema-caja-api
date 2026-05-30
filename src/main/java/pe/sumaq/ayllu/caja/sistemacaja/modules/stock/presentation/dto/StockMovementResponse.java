@@ -7,6 +7,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.domain.StockMovementType;
 
 public record StockMovementResponse(
         Long id,
+        Long operationalContextId,
+        String operationalContextName,
         Long productId,
         String productCode,
         String productName,

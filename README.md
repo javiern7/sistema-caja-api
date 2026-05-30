@@ -206,7 +206,8 @@ Notas operativas:
 - el reset borra solo datos operativos y administrativos generados durante QA; no elimina roles, permisos ni usuarios seed
 - si QA necesita una caja abierta de verdad, el perfil `demo` no la deja abierta: crea una nueva apertura manual sobre `DEMO-NEG-001`
 - en perfil `local`, la preparacion minima real es: crear contexto `EN_CURSO`, crear producto, crear proveedor, registrar compra para poblar stock y luego abrir caja
-- el reporte `stock` expone `stockScope=GLOBAL_MVP` y marca si el `operationalContextId` solicitado fue aplicado; en esta etapa el filtro por contexto aun no aplica al stock
+- el stock actual y sus movimientos ahora se almacenan por `operationalContextId`; frontend debe consultar `GET /api/v1/stock`, `GET /api/v1/stock/movimientos` y `GET /api/v1/reportes/stock` usando siempre el contexto operativo en el que esta posicionado
+- los listados `ventas`, `compras` y `egresos` aceptan `operationalContextId` para aislar visualizacion por negocio/evento sin mezclar universos operativos
 
 ## Estructura
 

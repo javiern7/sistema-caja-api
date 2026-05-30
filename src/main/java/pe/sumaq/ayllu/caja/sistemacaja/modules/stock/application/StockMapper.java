@@ -15,6 +15,7 @@ public class StockMapper {
 
     public StockCurrentResponse toCurrentResponse(ProductEntity productEntity, StockCurrentEntity stockCurrentEntity) {
         return new StockCurrentResponse(
+                stockCurrentEntity == null ? null : stockCurrentEntity.getOperationalContextId(),
                 productEntity.getId(),
                 productEntity.getCode(),
                 productEntity.getName(),
@@ -30,6 +31,8 @@ public class StockMapper {
     public StockMovementResponse toMovementResponse(StockMovementEntity movementEntity) {
         return new StockMovementResponse(
                 movementEntity.getId(),
+                movementEntity.getOperationalContext().getId(),
+                movementEntity.getOperationalContext().getName(),
                 movementEntity.getProduct().getId(),
                 movementEntity.getProduct().getCode(),
                 movementEntity.getProduct().getName(),

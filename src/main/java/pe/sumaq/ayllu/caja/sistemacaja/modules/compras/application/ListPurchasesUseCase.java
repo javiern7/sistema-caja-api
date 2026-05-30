@@ -21,7 +21,17 @@ public class ListPurchasesUseCase {
     }
 
     @Transactional(readOnly = true)
-    public Page<PurchaseListResponse> execute(PurchaseStatus status, Pageable pageable) {
+    public Page<PurchaseListResponse> execute(PurchaseStatus status, Long operationalContextId, Pageable pageable) {
+        if (operationalContextId != null) {
+            if (status == null) {
+                return jpaPurchaseRepository.findAllByOperationalContextId(operationalContextId, pageable)
+                        .map(purchaseMapper::toListResponse);
+            }
+
+            return jpaPurchaseRepository.findAllByStatusAndOperationalContextId(status, operationalContextId, pageable)
+                    .map(purchaseMapper::toListResponse);
+        }
+
         if (status == null) {
             return jpaPurchaseRepository.findAll(pageable)
                     .map(purchaseMapper::toListResponse);

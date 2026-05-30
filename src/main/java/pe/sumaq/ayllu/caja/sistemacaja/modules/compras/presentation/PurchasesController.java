@@ -96,6 +96,7 @@ public class PurchasesController {
     @PreAuthorize("hasAuthority('compra.registrar')")
     public ApiResponse<PageResponse<PurchaseListResponse>> listPurchases(
             @RequestParam(required = false) PurchaseStatus status,
+            @RequestParam(required = false) Long operationalContextId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) List<String> sort
@@ -110,7 +111,7 @@ public class PurchasesController {
 
         return responseFactory.success(
                 "Compras obtenidas correctamente.",
-                PageResponse.from(listPurchasesUseCase.execute(status, pageable))
+                PageResponse.from(listPurchasesUseCase.execute(status, operationalContextId, pageable))
         );
     }
 

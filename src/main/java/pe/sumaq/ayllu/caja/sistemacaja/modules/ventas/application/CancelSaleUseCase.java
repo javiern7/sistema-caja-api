@@ -16,11 +16,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserP
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.domain.CashMovementType;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.CashMovementEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashMovementRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.application.StockLedgerService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.domain.StockMovementType;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockCurrentRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockCurrentEntity;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockMovementEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.domain.SaleStatus;
@@ -35,8 +32,7 @@ public class CancelSaleUseCase {
 
     private final JpaSaleRepository jpaSaleRepository;
     private final JpaUserRepository jpaUserRepository;
-    private final JpaStockCurrentRepository jpaStockCurrentRepository;
-    private final JpaStockMovementRepository jpaStockMovementRepository;
+    private final StockLedgerService stockLedgerService;
     private final JpaCashMovementRepository jpaCashMovementRepository;
     private final SaleMapper saleMapper;
     private final AuditRegistrar auditRegistrar;
@@ -44,16 +40,14 @@ public class CancelSaleUseCase {
     public CancelSaleUseCase(
             JpaSaleRepository jpaSaleRepository,
             JpaUserRepository jpaUserRepository,
-            JpaStockCurrentRepository jpaStockCurrentRepository,
-            JpaStockMovementRepository jpaStockMovementRepository,
+            StockLedgerService stockLedgerService,
             JpaCashMovementRepository jpaCashMovementRepository,
             SaleMapper saleMapper,
             AuditRegistrar auditRegistrar
     ) {
         this.jpaSaleRepository = jpaSaleRepository;
         this.jpaUserRepository = jpaUserRepository;
-        this.jpaStockCurrentRepository = jpaStockCurrentRepository;
-        this.jpaStockMovementRepository = jpaStockMovementRepository;
+        this.stockLedgerService = stockLedgerService;
         this.jpaCashMovementRepository = jpaCashMovementRepository;
         this.saleMapper = saleMapper;
         this.auditRegistrar = auditRegistrar;
@@ -83,32 +77,18 @@ public class CancelSaleUseCase {
                         "No se encontro el usuario autenticado."
                 ));
 
-        List<StockCurrentEntity> stockUpdates = new ArrayList<>();
-        List<StockMovementEntity> stockMovements = new ArrayList<>();
-
         for (SaleItemEntity item : saleEntity.getItems()) {
             if (item.getProduct().isStockControlled()) {
-                StockCurrentEntity stockCurrent = jpaStockCurrentRepository.findById(item.getProduct().getId())
-                        .orElseThrow(() -> new BusinessException(
-                                ErrorCode.PRODUCTO_NO_ENCONTRADO,
-                                HttpStatus.NOT_FOUND,
-                                "No se encontro el stock del producto afectado."
-                        ));
-
-                stockCurrent.setCurrentStock(stockCurrent.getCurrentStock().add(item.getQuantity()));
-                stockCurrent.setUpdatedAt(LocalDateTime.now());
-                stockUpdates.add(stockCurrent);
-
-                StockMovementEntity stockMovement = new StockMovementEntity();
-                stockMovement.setProduct(item.getProduct());
-                stockMovement.setMovementType(StockMovementType.REVERSA);
-                stockMovement.setQuantity(item.getQuantity());
-                stockMovement.setReferenceType("VENTA_ANULADA");
-                stockMovement.setReferenceId(saleEntity.getId().toString());
-                stockMovement.setPerformedBy(principal.getUsername());
-                stockMovement.setOccurredAt(LocalDateTime.now());
-                stockMovement.setNote("Reposicion por anulacion de venta");
-                stockMovements.add(stockMovement);
+                stockLedgerService.increaseStock(
+                        saleEntity.getOperationalContext(),
+                        item.getProduct(),
+                        item.getQuantity(),
+                        principal.getUsername(),
+                        StockMovementType.REVERSA,
+                        "VENTA_ANULADA",
+                        saleEntity.getId().toString(),
+                        "Reposicion por anulacion de venta"
+                );
             }
         }
 
@@ -132,8 +112,6 @@ public class CancelSaleUseCase {
         saleEntity.setCancelledBy(cancelledBy);
         saleEntity.setCancellationReason(request.reason());
 
-        jpaStockCurrentRepository.saveAll(stockUpdates);
-        jpaStockMovementRepository.saveAll(stockMovements);
         jpaCashMovementRepository.saveAll(cashMovements);
         auditRegistrar.record(
                 "VENTA",

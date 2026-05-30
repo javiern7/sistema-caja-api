@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface JpaStockMovementRepository extends JpaRepository<StockMovementEntity, Long> {
 
-    List<StockMovementEntity> findAllByOrderByOccurredAtDesc();
+    List<StockMovementEntity> findAllByOperationalContextIdOrderByOccurredAtDesc(Long operationalContextId);
 
-    Page<StockMovementEntity> findAllByOrderByOccurredAtDesc(Pageable pageable);
+    Page<StockMovementEntity> findAllByOperationalContextIdOrderByOccurredAtDesc(Long operationalContextId, Pageable pageable);
 }

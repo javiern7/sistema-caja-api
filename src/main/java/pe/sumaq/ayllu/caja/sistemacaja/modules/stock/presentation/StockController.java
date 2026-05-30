@@ -62,6 +62,7 @@ public class StockController {
 
     @GetMapping
     public ApiResponse<PageResponse<StockCurrentResponse>> listCurrentStock(
+            @RequestParam Long operationalContextId,
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
@@ -77,12 +78,13 @@ public class StockController {
 
         return responseFactory.success(
                 "Stock actual obtenido correctamente.",
-                PageResponse.from(listCurrentStockUseCase.execute(active, pageable))
+                PageResponse.from(listCurrentStockUseCase.execute(operationalContextId, active, pageable))
         );
     }
 
     @GetMapping("/movimientos")
     public ApiResponse<PageResponse<StockMovementResponse>> listStockMovements(
+            @RequestParam Long operationalContextId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) List<String> sort
@@ -97,7 +99,7 @@ public class StockController {
 
         return responseFactory.success(
                 "Movimientos de stock obtenidos correctamente.",
-                PageResponse.from(listStockMovementsUseCase.execute(pageable))
+                PageResponse.from(listStockMovementsUseCase.execute(operationalContextId, pageable))
         );
     }
 }

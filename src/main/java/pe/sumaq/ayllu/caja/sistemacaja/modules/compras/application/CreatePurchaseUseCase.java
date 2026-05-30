@@ -29,10 +29,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persiste
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.ProviderEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.domain.StockMovementType;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockCurrentRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockCurrentEntity;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockMovementEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.application.StockLedgerService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 
@@ -43,8 +40,7 @@ public class CreatePurchaseUseCase {
     private final JpaOperationalContextRepository jpaOperationalContextRepository;
     private final JpaProviderRepository jpaProviderRepository;
     private final JpaProductRepository jpaProductRepository;
-    private final JpaStockCurrentRepository jpaStockCurrentRepository;
-    private final JpaStockMovementRepository jpaStockMovementRepository;
+    private final StockLedgerService stockLedgerService;
     private final JpaUserRepository jpaUserRepository;
     private final PurchaseMapper purchaseMapper;
     private final AuditRegistrar auditRegistrar;
@@ -54,8 +50,7 @@ public class CreatePurchaseUseCase {
             JpaOperationalContextRepository jpaOperationalContextRepository,
             JpaProviderRepository jpaProviderRepository,
             JpaProductRepository jpaProductRepository,
-            JpaStockCurrentRepository jpaStockCurrentRepository,
-            JpaStockMovementRepository jpaStockMovementRepository,
+            StockLedgerService stockLedgerService,
             JpaUserRepository jpaUserRepository,
             PurchaseMapper purchaseMapper,
             AuditRegistrar auditRegistrar
@@ -64,8 +59,7 @@ public class CreatePurchaseUseCase {
         this.jpaOperationalContextRepository = jpaOperationalContextRepository;
         this.jpaProviderRepository = jpaProviderRepository;
         this.jpaProductRepository = jpaProductRepository;
-        this.jpaStockCurrentRepository = jpaStockCurrentRepository;
-        this.jpaStockMovementRepository = jpaStockMovementRepository;
+        this.stockLedgerService = stockLedgerService;
         this.jpaUserRepository = jpaUserRepository;
         this.purchaseMapper = purchaseMapper;
         this.auditRegistrar = auditRegistrar;
@@ -159,30 +153,16 @@ public class CreatePurchaseUseCase {
 
         for (PurchaseItemEntity item : savedPurchase.getItems()) {
             if (item.getProduct().isStockControlled()) {
-                StockCurrentEntity stockCurrent = jpaStockCurrentRepository.findById(item.getProduct().getId())
-                        .orElseGet(() -> {
-                            StockCurrentEntity newStock = new StockCurrentEntity();
-                            newStock.setProductId(item.getProduct().getId());
-                            newStock.setProduct(item.getProduct());
-                            newStock.setCurrentStock(BigDecimal.ZERO);
-                            newStock.setUpdatedAt(LocalDateTime.now());
-                            return newStock;
-                        });
-
-                stockCurrent.setCurrentStock(stockCurrent.getCurrentStock().add(item.getQuantity()));
-                stockCurrent.setUpdatedAt(LocalDateTime.now());
-                jpaStockCurrentRepository.save(stockCurrent);
-
-                StockMovementEntity movement = new StockMovementEntity();
-                movement.setProduct(item.getProduct());
-                movement.setMovementType(StockMovementType.ENTRADA);
-                movement.setQuantity(item.getQuantity());
-                movement.setReferenceType("COMPRA");
-                movement.setReferenceId(savedPurchase.getId().toString());
-                movement.setPerformedBy(principal.getUsername());
-                movement.setOccurredAt(LocalDateTime.now());
-                movement.setNote("Entrada por compra");
-                jpaStockMovementRepository.save(movement);
+                stockLedgerService.increaseStock(
+                        operationalContext,
+                        item.getProduct(),
+                        item.getQuantity(),
+                        principal.getUsername(),
+                        StockMovementType.ENTRADA,
+                        "COMPRA",
+                        savedPurchase.getId().toString(),
+                        "Entrada por compra"
+                );
             }
         }
         auditRegistrar.record(

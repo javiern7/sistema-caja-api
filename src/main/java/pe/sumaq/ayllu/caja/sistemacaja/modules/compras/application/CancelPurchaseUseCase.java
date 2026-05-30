@@ -20,11 +20,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistenc
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.CancelPurchaseItemRequest;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.CancelPurchaseRequest;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.application.StockLedgerService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.domain.StockMovementType;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockCurrentRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockCurrentEntity;
-import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.StockMovementEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 
@@ -32,23 +29,20 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persisten
 public class CancelPurchaseUseCase {
 
     private final JpaPurchaseRepository jpaPurchaseRepository;
-    private final JpaStockCurrentRepository jpaStockCurrentRepository;
-    private final JpaStockMovementRepository jpaStockMovementRepository;
+    private final StockLedgerService stockLedgerService;
     private final JpaUserRepository jpaUserRepository;
     private final PurchaseMapper purchaseMapper;
     private final AuditRegistrar auditRegistrar;
 
     public CancelPurchaseUseCase(
             JpaPurchaseRepository jpaPurchaseRepository,
-            JpaStockCurrentRepository jpaStockCurrentRepository,
-            JpaStockMovementRepository jpaStockMovementRepository,
+            StockLedgerService stockLedgerService,
             JpaUserRepository jpaUserRepository,
             PurchaseMapper purchaseMapper,
             AuditRegistrar auditRegistrar
     ) {
         this.jpaPurchaseRepository = jpaPurchaseRepository;
-        this.jpaStockCurrentRepository = jpaStockCurrentRepository;
-        this.jpaStockMovementRepository = jpaStockMovementRepository;
+        this.stockLedgerService = stockLedgerService;
         this.jpaUserRepository = jpaUserRepository;
         this.purchaseMapper = purchaseMapper;
         this.auditRegistrar = auditRegistrar;
@@ -99,27 +93,16 @@ public class CancelPurchaseUseCase {
                 item.setCancelledQuantity(item.getCancelledQuantity().add(cancelRequest.cancelledQuantity()));
 
                 if (item.getProduct().isStockControlled()) {
-                    StockCurrentEntity stockCurrent = jpaStockCurrentRepository.findById(item.getProduct().getId())
-                            .orElseThrow(() -> new BusinessException(
-                                    ErrorCode.PRODUCTO_NO_ENCONTRADO,
-                                    HttpStatus.NOT_FOUND,
-                                    "No se encontro el stock del producto afectado."
-                            ));
-
-                    stockCurrent.setCurrentStock(stockCurrent.getCurrentStock().subtract(cancelRequest.cancelledQuantity()));
-                    stockCurrent.setUpdatedAt(LocalDateTime.now());
-                    jpaStockCurrentRepository.save(stockCurrent);
-
-                    StockMovementEntity movement = new StockMovementEntity();
-                    movement.setProduct(item.getProduct());
-                    movement.setMovementType(StockMovementType.REVERSA);
-                    movement.setQuantity(cancelRequest.cancelledQuantity());
-                    movement.setReferenceType("COMPRA_ANULADA");
-                    movement.setReferenceId(purchaseEntity.getId().toString());
-                    movement.setPerformedBy(principal.getUsername());
-                    movement.setOccurredAt(LocalDateTime.now());
-                    movement.setNote("Reversa por anulacion de compra");
-                    jpaStockMovementRepository.save(movement);
+                    stockLedgerService.decreaseStock(
+                            purchaseEntity.getOperationalContext(),
+                            item.getProduct(),
+                            cancelRequest.cancelledQuantity(),
+                            principal.getUsername(),
+                            StockMovementType.REVERSA,
+                            "COMPRA_ANULADA",
+                            purchaseEntity.getId().toString(),
+                            "Reversa por anulacion de compra"
+                    );
                 }
             }
 

@@ -242,14 +242,14 @@ public class ReportsQueryService {
             String username,
             ReportFormat format
     ) {
-        List<StockReportRowResponse> rows = jpaStockCurrentRepository.findAll().stream()
-                .map(this::toStockRow)
+        List<StockReportRowResponse> rows = jpaStockCurrentRepository.findAllByOperationalContextId(operationalContextId).stream()
+                .map(item -> toStockRow(item.getProduct(), item))
                 .toList();
 
         StockReportResponse response = new StockReportResponse(
-                "GLOBAL_MVP",
+                "OPERATIONAL_CONTEXT",
                 operationalContextId,
-                false,
+                true,
                 rows.size(),
                 rows.stream().map(StockReportRowResponse::currentStock).reduce(ZERO, BigDecimal::add),
                 rows
@@ -405,13 +405,13 @@ public class ReportsQueryService {
     }
 
     @Transactional(readOnly = true)
-    public Page<StockReportRowResponse> getStockReportPage(Pageable pageable) {
+    public Page<StockReportRowResponse> getStockReportPage(Long operationalContextId, Pageable pageable) {
         Page<ProductEntity> productsPage = jpaProductRepository.findAll(pageable);
         List<Long> productIds = productsPage.getContent().stream()
                 .map(ProductEntity::getId)
                 .toList();
 
-        java.util.Map<Long, StockCurrentEntity> stockByProductId = jpaStockCurrentRepository.findAllByProductIdIn(productIds)
+        java.util.Map<Long, StockCurrentEntity> stockByProductId = jpaStockCurrentRepository.findAllByOperationalContextIdAndProductIdIn(operationalContextId, productIds)
                 .stream()
                 .collect(java.util.stream.Collectors.toMap(StockCurrentEntity::getProductId, item -> item));
 
@@ -420,10 +420,6 @@ public class ReportsQueryService {
                 .toList();
 
         return new PageImpl<>(rows, pageable, productsPage.getTotalElements());
-    }
-
-    private StockReportRowResponse toStockRow(StockCurrentEntity item) {
-        return toStockRow(item.getProduct(), item);
     }
 
     private StockReportRowResponse toStockRow(ProductEntity product, StockCurrentEntity currentStock) {

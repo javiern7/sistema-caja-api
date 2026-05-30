@@ -86,6 +86,7 @@ public class ExpensesController {
     @GetMapping
     @PreAuthorize("hasAuthority('egreso.registrar')")
     public ApiResponse<PageResponse<ExpenseResponse>> listExpenses(
+            @RequestParam(required = false) Long operationalContextId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) List<String> sort
@@ -100,7 +101,7 @@ public class ExpensesController {
 
         return responseFactory.success(
                 "Egresos obtenidos correctamente.",
-                PageResponse.from(listExpensesUseCase.execute(pageable))
+                PageResponse.from(listExpensesUseCase.execute(operationalContextId, pageable))
         );
     }
 

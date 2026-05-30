@@ -21,8 +21,8 @@ public class ListStockMovementsUseCase {
         this.stockMapper = stockMapper;
     }
 
-    public Page<StockMovementResponse> execute(Pageable pageable) {
-        return jpaStockMovementRepository.findAllByOrderByOccurredAtDesc(pageable)
+    public Page<StockMovementResponse> execute(Long operationalContextId, Pageable pageable) {
+        return jpaStockMovementRepository.findAllByOperationalContextIdOrderByOccurredAtDesc(operationalContextId, pageable)
                 .map(stockMapper::toMovementResponse);
     }
 }
