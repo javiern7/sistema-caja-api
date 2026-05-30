@@ -1,6 +1,7 @@
 package pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,4 +15,6 @@ public interface JpaPurchaseRepository extends JpaRepository<PurchaseEntity, Lon
     Page<PurchaseEntity> findAllByStatus(PurchaseStatus status, Pageable pageable);
 
     List<PurchaseEntity> findAllByOrderByCreatedAtDesc();
+
+    Optional<PurchaseEntity> findByDocumentNumber(String documentNumber);
 }

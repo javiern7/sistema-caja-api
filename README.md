@@ -153,6 +153,33 @@ El perfil `demo` deja cargado automaticamente:
 
 La carga demo es idempotente: si el contexto `DEMO-NEG-001` ya existe, no vuelve a sembrar los datos.
 
+## Perfil QA opcional
+
+Si quieres una base neutra y repetible para QA del MVP, activa el perfil `qa`.
+
+- IntelliJ o variable de entorno: `SPRING_PROFILES_ACTIVE=qa`
+- Maven: `mvn spring-boot:run -Dspring-boot.run.profiles=qa`
+
+El perfil `qa` deja cargado automaticamente:
+
+- contexto `QA-BASE-001` en estado `EN_CURSO`
+- producto `PROD-QA-001`
+- proveedor `Proveedor QA Base`
+- compra semilla `QA-SEED-COMPRA-001` para poblar stock inicial
+
+Por defecto no deja:
+
+- caja abierta
+- ventas
+- egresos
+- reportes generados
+
+Si necesitas que la semilla deje una caja abierta desde el arranque, puedes sobrescribir:
+
+- `APP_QA_SEED_OPEN_CASH=true`
+
+La carga QA es idempotente por piezas: reusa contexto, producto, proveedor y compra semilla si ya existen.
+
 ## Reinicio limpio y resembrado para QA
 
 Si quieres repetir pruebas sin destruir roles ni usuarios base:
@@ -164,6 +191,7 @@ Si quieres repetir pruebas sin destruir roles ni usuarios base:
 Resultado esperado:
 
 - con perfil `local`: quedas con usuarios, roles y permisos seed, pero sin contexto ni datos operativos
+- con perfil `qa`: quedas con base operativa minima neutra para QA, sin caja consumida ni transacciones de venta/egreso
 - con perfil `demo`: al reiniciar se vuelve a sembrar `DEMO-NEG-001`, catalogos demo, compra, venta, egreso, caja cerrada e historial de reportes
 
 Notas operativas:
