@@ -104,12 +104,35 @@ El proyecto ya incluye `spring-boot-devtools` como dependencia `runtime` opciona
 - para reinicio mas fluido, usa el perfil `local` o `demo`
 - los cambios en clases y recursos deberian reflejarse con reinicio rapido del backend
 
-## Usuarios seed para entorno local
+## Seed real disponible en entorno local
+
+Con el perfil `local` el backend solo siembra seguridad base. No crea contextos, productos, proveedores, compras, ventas ni cajas.
+
+Roles base garantizados:
+
+- `ADMIN`
+- `CAJERO`
+- `SUPERVISOR`
+- `COMPRAS`
+- `REPORTES`
+
+Usuarios base garantizados:
 
 - `admin` / `Admin123*`
 - `cajero` / `Cajero123*`
+- `supervisor` / `Supervisor123*`
+- `compras` / `Compras123*`
+- `reportes` / `Reportes123*`
 
-Estos usuarios se crean automáticamente en base de datos si el esquema está vacío.
+Permisos operativos por perfil:
+
+- `ADMIN`: acceso total a usuarios, roles, contextos, catalogos, caja, ventas, compras, egresos, stock, auditoria y reportes.
+- `CAJERO`: `venta.registrar`, `egreso.registrar`, `caja.abrir`, `caja.cerrar`.
+- `SUPERVISOR`: caja, ventas, anulacion de ventas, egresos, stock y reportes operativos de ventas/caja/egresos.
+- `COMPRAS`: compras, proveedores, stock y reportes de compras/stock.
+- `REPORTES`: auditoria y reportes con exportacion.
+
+Si necesitas un flujo operativo listo para QA sin preparar catalogos ni contexto manualmente, levanta el perfil `demo`.
 
 ## Perfil demo opcional
 
@@ -129,6 +152,25 @@ El perfil `demo` deja cargado automaticamente:
 - historial inicial de reportes para consultas operativas
 
 La carga demo es idempotente: si el contexto `DEMO-NEG-001` ya existe, no vuelve a sembrar los datos.
+
+## Reinicio limpio y resembrado para QA
+
+Si quieres repetir pruebas sin destruir roles ni usuarios base:
+
+1. detén la aplicación
+2. ejecuta `database/scripts/reset-operational-data.sql`
+3. vuelve a levantar el backend
+
+Resultado esperado:
+
+- con perfil `local`: quedas con usuarios, roles y permisos seed, pero sin contexto ni datos operativos
+- con perfil `demo`: al reiniciar se vuelve a sembrar `DEMO-NEG-001`, catalogos demo, compra, venta, egreso, caja cerrada e historial de reportes
+
+Notas operativas:
+
+- el reset borra solo datos operativos y administrativos generados durante QA; no elimina roles, permisos ni usuarios seed
+- si QA necesita una caja abierta de verdad, el perfil `demo` no la deja abierta: crea una nueva apertura manual sobre `DEMO-NEG-001`
+- en perfil `local`, la preparacion minima real es: crear contexto `EN_CURSO`, crear producto, crear proveedor, registrar compra para poblar stock y luego abrir caja
 
 ## Estructura
 

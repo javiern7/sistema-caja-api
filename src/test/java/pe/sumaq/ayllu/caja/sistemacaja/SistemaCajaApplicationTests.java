@@ -3,6 +3,7 @@ package pe.sumaq.ayllu.caja.sistemacaja;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.JpaOperationalContextRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.infrastructure.persistence.OperationalContextEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.domain.OperationalContextStatus;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.negocioseventos.domain.OperationalContextType;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashBoxRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashMovementRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.JpaAuditOperationRepository;
@@ -189,6 +193,27 @@ class SistemaCajaApplicationTests {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN_OPERATION"));
+    }
+
+    @Test
+    void operationalContextsEndpointShouldAllowReportsUserToResolveReportFilters() throws Exception {
+        OperationalContextEntity contextEntity = new OperationalContextEntity();
+        contextEntity.setId(10L);
+        contextEntity.setCode("CTX-REPORT-001");
+        contextEntity.setName("Contexto Reportable");
+        contextEntity.setType(OperationalContextType.NEGOCIO);
+        contextEntity.setStatus(OperationalContextStatus.EN_CURSO);
+        contextEntity.setStartDate(LocalDate.of(2026, 5, 30));
+
+        when(jpaOperationalContextRepository.findAllByStatusOrderByStartDateAsc(OperationalContextStatus.EN_CURSO))
+                .thenReturn(List.of(contextEntity));
+
+        mockMvc.perform(get("/api/v1/contextos-operativos")
+                        .with(user("reportes").authorities(new SimpleGrantedAuthority("reporte.ver"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].code").value("CTX-REPORT-001"))
+                .andExpect(jsonPath("$.data[0].status").value("EN_CURSO"));
     }
 
     @Test
