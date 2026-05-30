@@ -3,6 +3,7 @@ package pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 import org.springframework.boot.ApplicationRunner;
@@ -66,28 +67,70 @@ public class SecurityDataInitializer {
                 permissionRepository.save(permissionEntity);
             });
 
-            List<PermissionEntity> adminPermissions = permissionRepository.findAll();
-            List<PermissionEntity> cajeroPermissions = permissionRepository.findByCodeIn(List.of(
-                    "venta.registrar",
-                    "egreso.registrar",
-                    "caja.abrir",
-                    "caja.cerrar"
+            Map<String, RoleSeed> roleSeeds = new LinkedHashMap<>();
+            roleSeeds.put("ADMIN", new RoleSeed("Rol administrador", permissionRepository.findAll()));
+            roleSeeds.put("CAJERO", new RoleSeed(
+                    "Rol cajero",
+                    permissionRepository.findByCodeIn(List.of(
+                            "venta.registrar",
+                            "egreso.registrar",
+                            "caja.abrir",
+                            "caja.cerrar"
+                    ))
+            ));
+            roleSeeds.put("SUPERVISOR", new RoleSeed(
+                    "Supervision operativa de caja, ventas y seguimiento",
+                    permissionRepository.findByCodeIn(List.of(
+                            "caja.abrir",
+                            "caja.cerrar",
+                            "venta.registrar",
+                            "venta.anular",
+                            "egreso.registrar",
+                            "stock.consultar",
+                            "reporte.ver",
+                            "reporte.ventas",
+                            "reporte.caja",
+                            "reporte.egresos"
+                    ))
+            ));
+            roleSeeds.put("COMPRAS", new RoleSeed(
+                    "Operacion de compras, proveedores y seguimiento de stock",
+                    permissionRepository.findByCodeIn(List.of(
+                            "compra.registrar",
+                            "proveedor.gestionar",
+                            "stock.consultar",
+                            "reporte.compras",
+                            "reporte.stock"
+                    ))
+            ));
+            roleSeeds.put("REPORTES", new RoleSeed(
+                    "Consulta y exportacion de reportes con auditoria",
+                    permissionRepository.findByCodeIn(List.of(
+                            "auditoria.consultar",
+                            "reporte.ver",
+                            "reporte.exportar",
+                            "reporte.ventas",
+                            "reporte.caja",
+                            "reporte.compras",
+                            "reporte.egresos",
+                            "reporte.stock",
+                            "reporte.utilidad"
+                    ))
             ));
 
-            RoleEntity adminRole = roleRepository.findByName("ADMIN")
-                    .orElseGet(() -> createRole(roleRepository, "ADMIN", "Rol administrador", adminPermissions));
-            syncRolePermissions(roleRepository, adminRole, adminPermissions);
+            Map<String, RoleEntity> seededRoles = new LinkedHashMap<>();
+            roleSeeds.forEach((roleName, roleSeed) -> {
+                RoleEntity roleEntity = roleRepository.findByName(roleName)
+                        .orElseGet(() -> createRole(roleRepository, roleName, roleSeed.description(), roleSeed.permissions()));
+                syncRolePermissions(roleRepository, roleEntity, roleSeed.description(), roleSeed.permissions());
+                seededRoles.put(roleName, roleEntity);
+            });
 
-            RoleEntity cajeroRole = roleRepository.findByName("CAJERO")
-                    .orElseGet(() -> createRole(roleRepository, "CAJERO", "Rol cajero", cajeroPermissions));
-            syncRolePermissions(roleRepository, cajeroRole, cajeroPermissions);
-
-            if (userRepository.findByUsername("admin").isEmpty()) {
-                userRepository.save(createUser("admin", "Admin123*", true, adminRole, passwordEncoder));
-            }
-            if (userRepository.findByUsername("cajero").isEmpty()) {
-                userRepository.save(createUser("cajero", "Cajero123*", true, cajeroRole, passwordEncoder));
-            }
+            createUserIfMissing(userRepository, passwordEncoder, seededRoles.get("ADMIN"), "admin", "Admin123*");
+            createUserIfMissing(userRepository, passwordEncoder, seededRoles.get("CAJERO"), "cajero", "Cajero123*");
+            createUserIfMissing(userRepository, passwordEncoder, seededRoles.get("SUPERVISOR"), "supervisor", "Supervisor123*");
+            createUserIfMissing(userRepository, passwordEncoder, seededRoles.get("COMPRAS"), "compras", "Compras123*");
+            createUserIfMissing(userRepository, passwordEncoder, seededRoles.get("REPORTES"), "reportes", "Reportes123*");
         };
     }
 
@@ -107,13 +150,20 @@ public class SecurityDataInitializer {
     private static void syncRolePermissions(
             JpaRoleRepository roleRepository,
             RoleEntity roleEntity,
+            String description,
             List<PermissionEntity> permissions
     ) {
+        boolean changed = false;
+
+        if (!java.util.Objects.equals(roleEntity.getDescription(), description)) {
+            roleEntity.setDescription(description);
+            changed = true;
+        }
+
         Set<String> currentCodes = roleEntity.getPermissions().stream()
                 .map(PermissionEntity::getCode)
                 .collect(java.util.stream.Collectors.toSet());
 
-        boolean changed = false;
         for (PermissionEntity permission : permissions) {
             if (currentCodes.add(permission.getCode())) {
                 roleEntity.getPermissions().add(permission);
@@ -123,6 +173,18 @@ public class SecurityDataInitializer {
 
         if (changed) {
             roleRepository.save(roleEntity);
+        }
+    }
+
+    private static void createUserIfMissing(
+            JpaUserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            RoleEntity roleEntity,
+            String username,
+            String rawPassword
+    ) {
+        if (userRepository.findByUsername(username).isEmpty()) {
+            userRepository.save(createUser(username, rawPassword, true, roleEntity, passwordEncoder));
         }
     }
 
@@ -139,5 +201,11 @@ public class SecurityDataInitializer {
         userEntity.setActive(active);
         userEntity.setRole(roleEntity);
         return userEntity;
+    }
+
+    private record RoleSeed(
+            String description,
+            List<PermissionEntity> permissions
+    ) {
     }
 }
