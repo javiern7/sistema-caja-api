@@ -188,6 +188,13 @@ Si quieres repetir pruebas sin destruir roles ni usuarios base:
 2. ejecuta `database/scripts/reset-operational-data.sql`
 3. vuelve a levantar el backend
 
+Alternativa desde API para perfiles locales:
+
+- `POST /api/v1/system/operational-data/reset`
+- requiere autenticacion y permiso `usuario.gestionar`
+- disponible para entornos `local`, `qa` y `demo`
+- limpia datos operativos y reejecuta la semilla activa del perfil cuando corresponda
+
 Resultado esperado:
 
 - con perfil `local`: quedas con usuarios, roles y permisos seed, pero sin contexto ni datos operativos
@@ -199,6 +206,7 @@ Notas operativas:
 - el reset borra solo datos operativos y administrativos generados durante QA; no elimina roles, permisos ni usuarios seed
 - si QA necesita una caja abierta de verdad, el perfil `demo` no la deja abierta: crea una nueva apertura manual sobre `DEMO-NEG-001`
 - en perfil `local`, la preparacion minima real es: crear contexto `EN_CURSO`, crear producto, crear proveedor, registrar compra para poblar stock y luego abrir caja
+- el reporte `stock` expone `stockScope=GLOBAL_MVP` y marca si el `operationalContextId` solicitado fue aplicado; en esta etapa el filtro por contexto aun no aplica al stock
 
 ## Estructura
 

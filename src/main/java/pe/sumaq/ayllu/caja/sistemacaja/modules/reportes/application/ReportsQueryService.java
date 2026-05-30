@@ -248,6 +248,8 @@ public class ReportsQueryService {
 
         StockReportResponse response = new StockReportResponse(
                 "GLOBAL_MVP",
+                operationalContextId,
+                false,
                 rows.size(),
                 rows.stream().map(StockReportRowResponse::currentStock).reduce(ZERO, BigDecimal::add),
                 rows

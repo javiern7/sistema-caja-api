@@ -77,6 +77,52 @@ class QaSeedIntegrationTest {
         assertThat(cashBoxes).isEmpty();
     }
 
+    @Test
+    void shouldResetOperationalDataAndReseedQaBase() throws Exception {
+        qaSeedRunner.run(EMPTY_ARGS);
+
+        String token = loginAsAdmin();
+        long operationalContextId = findOperationalContextId(token, "QA-BASE-001");
+        long productId = findProductId(token, "PROD-QA-001");
+        long cashBoxId = openCashBox(token, operationalContextId);
+        createSale(token, operationalContextId, cashBoxId, productId);
+
+        JsonNode salesBeforeReset = read(performGet("/api/v1/ventas", token)).path("data").path("items");
+        assertThat(salesBeforeReset).hasSize(1);
+
+        JsonNode resetResult = read(performJson(
+                post("/api/v1/system/operational-data/reset").header(HttpHeaders.AUTHORIZATION, "Bearer " + token),
+                ""
+        )).path("data");
+        assertThat(resetResult.path("appliedSeeds")).anySatisfy(item -> assertThat(item.asText()).isEqualTo("qa"));
+
+        JsonNode contextsAfterReset = read(performGet("/api/v1/contextos-operativos", token)).path("data");
+        JsonNode stockAfterReset = read(performGet("/api/v1/stock", token)).path("data").path("items");
+        JsonNode salesAfterReset = read(performGet("/api/v1/ventas", token)).path("data").path("items");
+        JsonNode cashBoxesAfterReset = read(performGet("/api/v1/cajas", token)).path("data").path("items");
+
+        assertThat(contextsAfterReset).anySatisfy(item -> assertThat(item.path("code").asText()).isEqualTo("QA-BASE-001"));
+        assertThat(stockAfterReset).anySatisfy(item -> {
+            assertThat(item.path("productCode").asText()).isEqualTo("PROD-QA-001");
+            assertThat(item.path("currentStock").decimalValue()).isEqualByComparingTo("10.00");
+        });
+        assertThat(salesAfterReset).isEmpty();
+        assertThat(cashBoxesAfterReset).isEmpty();
+    }
+
+    @Test
+    void shouldExposeThatStockReportContextFilterIsNotAppliedYet() throws Exception {
+        qaSeedRunner.run(EMPTY_ARGS);
+
+        String token = loginAsAdmin();
+        long operationalContextId = findOperationalContextId(token, "QA-BASE-001");
+        JsonNode stockReport = read(performGet("/api/v1/reportes/stock?operationalContextId=" + operationalContextId, token)).path("data");
+
+        assertThat(stockReport.path("stockScope").asText()).isEqualTo("GLOBAL_MVP");
+        assertThat(stockReport.path("requestedOperationalContextId").asLong()).isEqualTo(operationalContextId);
+        assertThat(stockReport.path("operationalContextFilterApplied").asBoolean()).isFalse();
+    }
+
     private String loginAsAdmin() throws Exception {
         String response = performJson(
                 post("/api/v1/auth/login"),
@@ -118,5 +164,65 @@ class QaSeedIntegrationTest {
 
     private JsonNode read(String response) throws Exception {
         return objectMapper.readTree(response);
+    }
+
+    private long findOperationalContextId(String token, String code) throws Exception {
+        JsonNode contexts = read(performGet("/api/v1/contextos-operativos", token)).path("data");
+        for (JsonNode item : contexts) {
+            if (code.equals(item.path("code").asText())) {
+                return item.path("id").asLong();
+            }
+        }
+        throw new IllegalStateException("No se encontro el contexto operativo esperado.");
+    }
+
+    private long findProductId(String token, String code) throws Exception {
+        JsonNode products = read(performGet("/api/v1/productos", token)).path("data").path("items");
+        for (JsonNode item : products) {
+            if (code.equals(item.path("code").asText())) {
+                return item.path("id").asLong();
+            }
+        }
+        throw new IllegalStateException("No se encontro el producto esperado.");
+    }
+
+    private long openCashBox(String token, long operationalContextId) throws Exception {
+        String response = performJson(
+                post("/api/v1/cajas/aperturas").header(HttpHeaders.AUTHORIZATION, "Bearer " + token),
+                """
+                        {
+                          "operationalContextId": %d,
+                          "openingAmount": 100.00,
+                          "observation": "Apertura QA para reseed"
+                        }
+                        """.formatted(operationalContextId)
+        );
+        return read(response).path("data").path("id").asLong();
+    }
+
+    private void createSale(String token, long operationalContextId, long cashBoxId, long productId) throws Exception {
+        performJson(
+                post("/api/v1/ventas").header(HttpHeaders.AUTHORIZATION, "Bearer " + token),
+                """
+                        {
+                          "operationalContextId": %d,
+                          "cashBoxId": %d,
+                          "items": [
+                            {
+                              "productId": %d,
+                              "quantity": 2.00,
+                              "unitPrice": 15.00
+                            }
+                          ],
+                          "payments": [
+                            {
+                              "paymentMethod": "EFECTIVO",
+                              "amount": 30.00
+                            }
+                          ],
+                          "observation": "Venta QA antes de reseed"
+                        }
+                        """.formatted(operationalContextId, cashBoxId, productId)
+        );
     }
 }

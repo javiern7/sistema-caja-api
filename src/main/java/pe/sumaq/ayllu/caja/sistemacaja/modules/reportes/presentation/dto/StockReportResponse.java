@@ -5,6 +5,8 @@ import java.util.List;
 
 public record StockReportResponse(
         String stockScope,
+        Long requestedOperationalContextId,
+        boolean operationalContextFilterApplied,
         int totalProducts,
         BigDecimal totalUnits,
         List<StockReportRowResponse> items

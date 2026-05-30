@@ -310,7 +310,7 @@ public class ReportsController {
 
     @GetMapping("/stock")
     @PreAuthorize("hasAnyAuthority('reporte.ver', 'reporte.stock', 'stock.consultar')")
-    @Operation(summary = "Reporte de stock", description = "Consulta stock actual global del MVP.")
+    @Operation(summary = "Reporte de stock", description = "Consulta stock actual global del MVP. El parametro operationalContextId se conserva solo como referencia de trazabilidad y no aplica filtro real en esta etapa.")
     public ApiResponse<StockReportResponse> getStockReport(
             Authentication authentication,
             @RequestParam(required = false) LocalDate fechaDesde,

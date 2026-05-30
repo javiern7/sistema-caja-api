@@ -36,6 +36,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.JpaSaleRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.common.application.OperationalDataResetService;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -101,6 +102,9 @@ class SistemaCajaApplicationTests {
 
     @MockBean
     private JpaReportHistoryRepository jpaReportHistoryRepository;
+
+    @MockBean
+    private OperationalDataResetService operationalDataResetService;
 
     @Test
     void contextLoads() {
@@ -187,8 +191,25 @@ class SistemaCajaApplicationTests {
     }
 
     @Test
+    void operationalDataResetEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(post("/api/v1/system/operational-data/reset"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
     void operationalContextsEndpointShouldRejectAuthenticatedUserWithoutOperationalPermission() throws Exception {
         mockMvc.perform(get("/api/v1/contextos-operativos")
+                        .with(user("visitante").authorities(new SimpleGrantedAuthority[0])))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("FORBIDDEN_OPERATION"));
+    }
+
+    @Test
+    void operationalDataResetEndpointShouldRejectAuthenticatedUserWithoutAdminPermission() throws Exception {
+        mockMvc.perform(post("/api/v1/system/operational-data/reset")
                         .with(user("visitante").authorities(new SimpleGrantedAuthority[0])))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
