@@ -140,7 +140,11 @@ public class CreateSaleUseCase {
             throw new BusinessException(
                     ErrorCode.PAGOS_NO_CUADRAN,
                     HttpStatus.BAD_REQUEST,
-                    "La suma de pagos debe coincidir exactamente con el total de la venta."
+                    "La suma de pagos debe coincidir exactamente con el total de la venta.",
+                    List.of(
+                            "totalVenta=" + subtotal,
+                            "totalPagos=" + totalPayments
+                    )
             );
         }
 
@@ -233,10 +237,22 @@ public class CreateSaleUseCase {
         if (!cashBox.getStatus().equals(CashBoxStatus.ABIERTA)
                 || !cashBox.getOpenedBy().getId().equals(principal.toAuthenticatedUser().id())
                 || !cashBox.getOperationalContext().getId().equals(request.operationalContextId())) {
+            List<String> details = new ArrayList<>();
+            if (!cashBox.getStatus().equals(CashBoxStatus.ABIERTA)) {
+                details.add("cashBoxStatus=" + cashBox.getStatus());
+            }
+            if (!cashBox.getOpenedBy().getId().equals(principal.toAuthenticatedUser().id())) {
+                details.add("openedByUserId=" + cashBox.getOpenedBy().getId());
+            }
+            if (!cashBox.getOperationalContext().getId().equals(request.operationalContextId())) {
+                details.add("cashBoxOperationalContextId=" + cashBox.getOperationalContext().getId());
+                details.add("requestedOperationalContextId=" + request.operationalContextId());
+            }
             throw new BusinessException(
                     ErrorCode.VENTA_CAJA_INVALIDA,
                     HttpStatus.CONFLICT,
-                    "La venta requiere una caja abierta y valida para el usuario y contexto."
+                    "La venta requiere una caja abierta y valida para el usuario y contexto.",
+                    details
             );
         }
 

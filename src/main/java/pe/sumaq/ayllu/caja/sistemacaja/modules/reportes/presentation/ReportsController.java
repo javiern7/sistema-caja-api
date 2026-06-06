@@ -387,7 +387,11 @@ public class ReportsController {
             throw new BusinessException(
                     ErrorCode.VALIDATION_ERROR,
                     org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "El reporte de ventas solo admite formato xlsx."
+                    "El reporte de ventas solo admite formato xlsx.",
+                    List.of(
+                            "allowedFormat=xlsx",
+                            "requestedFormat=" + formato
+                    )
             );
         }
 
@@ -418,7 +422,11 @@ public class ReportsController {
             throw new BusinessException(
                     ErrorCode.VALIDATION_ERROR,
                     org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "El reporte de caja solo admite formato pdf."
+                    "El reporte de caja solo admite formato pdf.",
+                    List.of(
+                            "allowedFormat=pdf",
+                            "requestedFormat=" + formato
+                    )
             );
         }
 

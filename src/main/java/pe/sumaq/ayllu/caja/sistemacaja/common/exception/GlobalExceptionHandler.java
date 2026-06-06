@@ -29,7 +29,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
         return ResponseEntity.status(exception.getStatus())
-                .body(responseFactory.error(exception.getMessage(), exception.getErrorCode()));
+                .body(responseFactory.error(
+                        exception.getMessage(),
+                        exception.getErrorCode(),
+                        exception.getDetails()
+                ));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

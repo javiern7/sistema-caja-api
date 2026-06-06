@@ -86,7 +86,12 @@ public class CancelPurchaseUseCase {
                     throw new BusinessException(
                             ErrorCode.COMPRA_ANULACION_INVALIDA,
                             HttpStatus.BAD_REQUEST,
-                            "La cantidad anulada no puede exceder la cantidad pendiente del item."
+                            "La cantidad anulada no puede exceder la cantidad pendiente del item.",
+                            java.util.List.of(
+                                    "purchaseItemId=" + item.getId(),
+                                    "remainingQuantity=" + remaining,
+                                    "requestedCancelledQuantity=" + cancelRequest.cancelledQuantity()
+                            )
                     );
                 }
 

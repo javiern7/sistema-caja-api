@@ -82,7 +82,12 @@ public class CloseCashBoxUseCase {
             throw new BusinessException(
                     ErrorCode.CAJA_CIERRE_REQUIERE_OBSERVACION,
                     HttpStatus.BAD_REQUEST,
-                    "La observacion es obligatoria cuando existe diferencia en el cierre."
+                    "La observacion es obligatoria cuando existe diferencia en el cierre.",
+                    List.of(
+                            "expectedAmount=" + expectedAmount,
+                            "countedAmount=" + request.countedAmount(),
+                            "differenceAmount=" + differenceAmount
+                    )
             );
         }
 

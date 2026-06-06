@@ -90,10 +90,19 @@ public class CreateExpenseUseCase {
 
             if (cashBox.getStatus() != CashBoxStatus.ABIERTA
                     || !cashBox.getOperationalContext().getId().equals(request.operationalContextId())) {
+                java.util.List<String> details = new java.util.ArrayList<>();
+                if (cashBox.getStatus() != CashBoxStatus.ABIERTA) {
+                    details.add("cashBoxStatus=" + cashBox.getStatus());
+                }
+                if (!cashBox.getOperationalContext().getId().equals(request.operationalContextId())) {
+                    details.add("cashBoxOperationalContextId=" + cashBox.getOperationalContext().getId());
+                    details.add("requestedOperationalContextId=" + request.operationalContextId());
+                }
                 throw new BusinessException(
                         ErrorCode.EGRESO_TIPO_CAJA_INVALIDO,
                         HttpStatus.CONFLICT,
-                        "La caja indicada no es valida para registrar el egreso."
+                        "La caja indicada no es valida para registrar el egreso.",
+                        details
                 );
             }
         }
