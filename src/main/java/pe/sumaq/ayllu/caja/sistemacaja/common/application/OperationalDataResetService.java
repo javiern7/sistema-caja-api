@@ -13,6 +13,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -49,16 +50,19 @@ public class OperationalDataResetService {
     private final JdbcTemplate jdbcTemplate;
     private final Environment environment;
     private final ApplicationContext applicationContext;
+    private final boolean resetEnabled;
 
     public OperationalDataResetService(
             ObjectProvider<DataSource> dataSourceProvider,
             Environment environment,
-            ApplicationContext applicationContext
+            ApplicationContext applicationContext,
+            @Value("${app.operational.reset.enabled:true}") boolean resetEnabled
     ) {
         DataSource dataSource = dataSourceProvider.getIfAvailable();
         this.jdbcTemplate = dataSource == null ? null : new JdbcTemplate(dataSource);
         this.environment = environment;
         this.applicationContext = applicationContext;
+        this.resetEnabled = resetEnabled;
     }
 
     @Transactional
@@ -69,6 +73,14 @@ public class OperationalDataResetService {
                     ErrorCode.FORBIDDEN_OPERATION,
                     HttpStatus.FORBIDDEN,
                     "El reinicio operativo no se encuentra disponible sin una base de datos activa."
+            );
+        }
+
+        if (!resetEnabled) {
+            throw new BusinessException(
+                    ErrorCode.FORBIDDEN_OPERATION,
+                    HttpStatus.FORBIDDEN,
+                    "El reinicio operativo esta deshabilitado para este perfil persistente."
             );
         }
 

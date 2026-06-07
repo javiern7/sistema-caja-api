@@ -134,6 +134,26 @@ Permisos operativos por perfil:
 
 Si necesitas un flujo operativo listo para QA sin preparar catalogos ni contexto manualmente, levanta el perfil `demo`.
 
+## Perfil local persistente
+
+Si quieres conservar evidencia operativa acumulada en tu BD local y evitar un borrado accidental por el endpoint de reset, levanta el perfil `local-persistent`.
+
+- IntelliJ o variable de entorno: `SPRING_PROFILES_ACTIVE=local-persistent`
+- Maven: `mvn spring-boot:run -Dspring-boot.run.profiles=local-persistent`
+
+Este perfil:
+
+- reutiliza la configuracion `local` de PostgreSQL y el seed base de seguridad
+- no ejecuta semilla operativa automatica
+- deshabilita `POST /api/v1/system/operational-data/reset`
+- conserva `audit_operations` y `report_history` mientras no ejecutes manualmente el script SQL de limpieza
+
+Uso recomendado:
+
+- `qa`: cuando quieres repetir pruebas desde una base neutra y resembrable
+- `demo`: cuando quieres un flujo demostrativo listo para Swagger/Postman
+- `local-persistent`: cuando quieres conservar compras, ventas, caja, auditoria e historial de reportes como evidencia acumulada local
+
 ## Perfil demo opcional
 
 Si quieres levantar el backend con datos demostrativos para revisar Swagger, Postman o el cliente HTTP de IntelliJ, activa tambien el perfil `demo`.
@@ -193,6 +213,7 @@ Alternativa desde API para perfiles locales:
 - `POST /api/v1/system/operational-data/reset`
 - requiere autenticacion y permiso `usuario.gestionar`
 - disponible para entornos `local`, `qa` y `demo`
+- deshabilitado en `local-persistent`
 - limpia datos operativos y reejecuta la semilla activa del perfil cuando corresponda
 
 Resultado esperado:
@@ -204,6 +225,8 @@ Resultado esperado:
 Notas operativas:
 
 - el reset borra solo datos operativos y administrativos generados durante QA; no elimina roles, permisos ni usuarios seed
+- el reset tambien borra `audit_operations` y `report_history`; por eso no debe usarse para conservar evidencia historica
+- el perfil `local-persistent` bloquea el endpoint de reset, pero el script `database/scripts/reset-operational-data.sql` sigue siendo destructivo si se ejecuta manualmente
 - si QA necesita una caja abierta de verdad, el perfil `demo` no la deja abierta: crea una nueva apertura manual sobre `DEMO-NEG-001`
 - en perfil `local`, la preparacion minima real es: crear contexto `EN_CURSO`, crear producto, crear proveedor, registrar compra para poblar stock y luego abrir caja
 - el stock actual y sus movimientos ahora se almacenan por `operationalContextId`; frontend debe consultar `GET /api/v1/stock`, `GET /api/v1/stock/movimientos` y `GET /api/v1/reportes/stock` usando siempre el contexto operativo en el que esta posicionado

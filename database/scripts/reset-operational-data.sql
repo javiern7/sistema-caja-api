@@ -1,3 +1,7 @@
+-- ADVERTENCIA:
+-- Este script elimina datos operativos, auditoria e historial de reportes.
+-- Usalo solo en entornos resembrables (`qa`, `demo` o `local` limpio), no en `local-persistent`.
+
 TRUNCATE TABLE
     report_history,
     audit_operations,

@@ -6,6 +6,8 @@ spring:
     group:
       demo:
         - local
+      local-persistent:
+        - local
       qa:
         - local
   flyway:

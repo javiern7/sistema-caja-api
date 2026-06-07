@@ -1,0 +1,4 @@
+app:
+  operational:
+    reset:
+      enabled: false
