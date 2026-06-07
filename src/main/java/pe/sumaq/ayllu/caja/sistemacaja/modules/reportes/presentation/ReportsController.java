@@ -50,6 +50,8 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.Utility
 @SecurityRequirement(name = "bearerAuth")
 public class ReportsController {
 
+    private static final String XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
     private static final Set<String> ALLOWED_SALES_REPORT_SORTS = Set.of(
             "id",
             "createdAt",
@@ -375,7 +377,7 @@ public class ReportsController {
 
     @GetMapping("/ventas/exportar")
     @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.ventas')")
-    @Operation(summary = "Exportar reporte de ventas", description = "Exporta el reporte de ventas en formato xlsx.")
+    @Operation(summary = "Exportar reporte de ventas", description = "Exporta el reporte de ventas en formato xlsx o pdf.")
     public ResponseEntity<byte[]> exportSalesReport(
             Authentication authentication,
             @RequestParam String formato,
@@ -383,34 +385,24 @@ public class ReportsController {
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Long operationalContextId
     ) {
-        if (!"xlsx".equalsIgnoreCase(formato)) {
-            throw new BusinessException(
-                    ErrorCode.VALIDATION_ERROR,
-                    org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "El reporte de ventas solo admite formato xlsx.",
-                    List.of(
-                            "allowedFormat=xlsx",
-                            "requestedFormat=" + formato
-                    )
-            );
-        }
-
+        ReportFormat exportFormat = resolveFormat(formato, "El reporte de ventas solo admite formato xlsx o pdf.", "xlsx", "pdf");
         SalesReportResponse report = reportsQueryService.getSalesReport(
                 fechaDesde,
                 fechaHasta,
                 operationalContextId,
                 extractPrincipal(authentication).getUsername(),
-                ReportFormat.XLSX
+                exportFormat
         );
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename("reporte-ventas.xlsx").build().toString())
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(reportExportService.exportSalesToExcel(report));
+        return switch (exportFormat) {
+            case XLSX -> buildBinaryResponse("reporte-ventas.xlsx", MediaType.parseMediaType(XLSX_MEDIA_TYPE), reportExportService.exportSalesToExcel(report));
+            case PDF -> buildBinaryResponse("reporte-ventas.pdf", MediaType.APPLICATION_PDF, reportExportService.exportSalesToPdf(report));
+            default -> throw unsupportedFormat("El reporte de ventas solo admite formato xlsx o pdf.", formato, "xlsx", "pdf");
+        };
     }
 
     @GetMapping("/caja/exportar")
     @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.caja')")
-    @Operation(summary = "Exportar reporte de caja", description = "Exporta el reporte de caja en formato pdf.")
+    @Operation(summary = "Exportar reporte de caja", description = "Exporta el reporte de caja en formato xlsx o pdf.")
     public ResponseEntity<byte[]> exportCashReport(
             Authentication authentication,
             @RequestParam String formato,
@@ -418,29 +410,119 @@ public class ReportsController {
             @RequestParam(required = false) LocalDate fechaHasta,
             @RequestParam(required = false) Long operationalContextId
     ) {
-        if (!"pdf".equalsIgnoreCase(formato)) {
-            throw new BusinessException(
-                    ErrorCode.VALIDATION_ERROR,
-                    org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "El reporte de caja solo admite formato pdf.",
-                    List.of(
-                            "allowedFormat=pdf",
-                            "requestedFormat=" + formato
-                    )
-            );
-        }
-
+        ReportFormat exportFormat = resolveFormat(formato, "El reporte de caja solo admite formato xlsx o pdf.", "xlsx", "pdf");
         CashReportResponse report = reportsQueryService.getCashReport(
                 fechaDesde,
                 fechaHasta,
                 operationalContextId,
                 extractPrincipal(authentication).getUsername(),
-                ReportFormat.PDF
+                exportFormat
         );
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename("reporte-caja.pdf").build().toString())
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(reportExportService.exportCashToPdf(report));
+        return switch (exportFormat) {
+            case XLSX -> buildBinaryResponse("reporte-caja.xlsx", MediaType.parseMediaType(XLSX_MEDIA_TYPE), reportExportService.exportCashToExcel(report));
+            case PDF -> buildBinaryResponse("reporte-caja.pdf", MediaType.APPLICATION_PDF, reportExportService.exportCashToPdf(report));
+            default -> throw unsupportedFormat("El reporte de caja solo admite formato xlsx o pdf.", formato, "xlsx", "pdf");
+        };
+    }
+
+    @GetMapping("/compras/exportar")
+    @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.compras')")
+    @Operation(summary = "Exportar reporte de compras", description = "Exporta el reporte de compras en formato xlsx o pdf.")
+    public ResponseEntity<byte[]> exportPurchasesReport(
+            Authentication authentication,
+            @RequestParam String formato,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long operationalContextId
+    ) {
+        ReportFormat exportFormat = resolveFormat(formato, "El reporte de compras solo admite formato xlsx o pdf.", "xlsx", "pdf");
+        PurchaseReportResponse report = reportsQueryService.getPurchasesReport(
+                fechaDesde,
+                fechaHasta,
+                operationalContextId,
+                extractPrincipal(authentication).getUsername(),
+                exportFormat
+        );
+        return switch (exportFormat) {
+            case XLSX -> buildBinaryResponse("reporte-compras.xlsx", MediaType.parseMediaType(XLSX_MEDIA_TYPE), reportExportService.exportPurchasesToExcel(report));
+            case PDF -> buildBinaryResponse("reporte-compras.pdf", MediaType.APPLICATION_PDF, reportExportService.exportPurchasesToPdf(report));
+            default -> throw unsupportedFormat("El reporte de compras solo admite formato xlsx o pdf.", formato, "xlsx", "pdf");
+        };
+    }
+
+    @GetMapping("/egresos/exportar")
+    @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.egresos')")
+    @Operation(summary = "Exportar reporte de egresos", description = "Exporta el reporte de egresos en formato xlsx o pdf.")
+    public ResponseEntity<byte[]> exportExpensesReport(
+            Authentication authentication,
+            @RequestParam String formato,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long operationalContextId
+    ) {
+        ReportFormat exportFormat = resolveFormat(formato, "El reporte de egresos solo admite formato xlsx o pdf.", "xlsx", "pdf");
+        ExpenseReportResponse report = reportsQueryService.getExpensesReport(
+                fechaDesde,
+                fechaHasta,
+                operationalContextId,
+                extractPrincipal(authentication).getUsername(),
+                exportFormat
+        );
+        return switch (exportFormat) {
+            case XLSX -> buildBinaryResponse("reporte-egresos.xlsx", MediaType.parseMediaType(XLSX_MEDIA_TYPE), reportExportService.exportExpensesToExcel(report));
+            case PDF -> buildBinaryResponse("reporte-egresos.pdf", MediaType.APPLICATION_PDF, reportExportService.exportExpensesToPdf(report));
+            default -> throw unsupportedFormat("El reporte de egresos solo admite formato xlsx o pdf.", formato, "xlsx", "pdf");
+        };
+    }
+
+    @GetMapping("/stock/exportar")
+    @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.stock', 'stock.consultar')")
+    @Operation(summary = "Exportar reporte de stock", description = "Exporta el reporte de stock en formato xlsx o pdf.")
+    public ResponseEntity<byte[]> exportStockReport(
+            Authentication authentication,
+            @RequestParam String formato,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam Long operationalContextId
+    ) {
+        ReportFormat exportFormat = resolveFormat(formato, "El reporte de stock solo admite formato xlsx o pdf.", "xlsx", "pdf");
+        StockReportResponse report = reportsQueryService.getStockReport(
+                fechaDesde,
+                fechaHasta,
+                operationalContextId,
+                extractPrincipal(authentication).getUsername(),
+                exportFormat
+        );
+        return switch (exportFormat) {
+            case XLSX -> buildBinaryResponse("reporte-stock.xlsx", MediaType.parseMediaType(XLSX_MEDIA_TYPE), reportExportService.exportStockToExcel(report));
+            case PDF -> buildBinaryResponse("reporte-stock.pdf", MediaType.APPLICATION_PDF, reportExportService.exportStockToPdf(report));
+            default -> throw unsupportedFormat("El reporte de stock solo admite formato xlsx o pdf.", formato, "xlsx", "pdf");
+        };
+    }
+
+    @GetMapping("/utilidad/exportar")
+    @PreAuthorize("hasAnyAuthority('reporte.exportar', 'reporte.utilidad')")
+    @Operation(summary = "Exportar reporte de utilidad", description = "Exporta el reporte de utilidad en formato xlsx o pdf.")
+    public ResponseEntity<byte[]> exportUtilityReport(
+            Authentication authentication,
+            @RequestParam String formato,
+            @RequestParam(required = false) LocalDate fechaDesde,
+            @RequestParam(required = false) LocalDate fechaHasta,
+            @RequestParam(required = false) Long operationalContextId
+    ) {
+        ReportFormat exportFormat = resolveFormat(formato, "El reporte de utilidad solo admite formato xlsx o pdf.", "xlsx", "pdf");
+        UtilityReportResponse report = reportsQueryService.getUtilityReport(
+                fechaDesde,
+                fechaHasta,
+                operationalContextId,
+                extractPrincipal(authentication).getUsername(),
+                exportFormat
+        );
+        return switch (exportFormat) {
+            case XLSX -> buildBinaryResponse("reporte-utilidad.xlsx", MediaType.parseMediaType(XLSX_MEDIA_TYPE), reportExportService.exportUtilityToExcel(report));
+            case PDF -> buildBinaryResponse("reporte-utilidad.pdf", MediaType.APPLICATION_PDF, reportExportService.exportUtilityToPdf(report));
+            default -> throw unsupportedFormat("El reporte de utilidad solo admite formato xlsx o pdf.", formato, "xlsx", "pdf");
+        };
     }
 
     @GetMapping("/historial")
@@ -477,5 +559,33 @@ public class ReportsController {
         }
 
         return principal;
+    }
+
+    private ReportFormat resolveFormat(String formato, String message, String... allowedFormats) {
+        for (String allowedFormat : allowedFormats) {
+            if (allowedFormat.equalsIgnoreCase(formato)) {
+                return ReportFormat.valueOf(allowedFormat.toUpperCase());
+            }
+        }
+        throw unsupportedFormat(message, formato, allowedFormats);
+    }
+
+    private BusinessException unsupportedFormat(String message, String formato, String... allowedFormats) {
+        return new BusinessException(
+                ErrorCode.VALIDATION_ERROR,
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                message,
+                List.of(
+                        "allowedFormats=" + String.join(",", allowedFormats),
+                        "requestedFormat=" + formato
+                )
+        );
+    }
+
+    private ResponseEntity<byte[]> buildBinaryResponse(String fileName, MediaType mediaType, byte[] content) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(fileName).build().toString())
+                .contentType(mediaType)
+                .body(content);
     }
 }

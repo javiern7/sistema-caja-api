@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -24,9 +25,14 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.JpaAuditOperationRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.JpaExpenseRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.ReportExportService;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.ReportsQueryService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.infrastructure.persistence.JpaReportHistoryRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.SalesReportResponse;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.presentation.dto.StockReportResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaPermissionRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.JpaRoleRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.rolespermisos.infrastructure.persistence.PermissionEntity;
@@ -42,6 +48,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -105,6 +112,12 @@ class SistemaCajaApplicationTests {
 
     @MockBean
     private OperationalDataResetService operationalDataResetService;
+
+    @MockBean
+    private ReportsQueryService reportsQueryService;
+
+    @MockBean
+    private ReportExportService reportExportService;
 
     @Test
     void contextLoads() {
@@ -318,6 +331,48 @@ class SistemaCajaApplicationTests {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
+    void salesExportEndpointShouldReturnExcelBinaryContract() throws Exception {
+        when(reportsQueryService.getSalesReport(null, null, null, "reportes", pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.domain.ReportFormat.XLSX))
+                .thenReturn(new SalesReportResponse(null, null, null, 0, java.math.BigDecimal.ZERO, List.of()));
+        when(reportExportService.exportSalesToExcel(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new byte[]{1, 2, 3});
+
+        mockMvc.perform(get("/api/v1/reportes/ventas/exportar")
+                        .with(user(SecurityUserPrincipal.authenticated(10L, "reportes", "REPORTES", true, List.of("reporte.exportar"))))
+                        .param("formato", "xlsx"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("reporte-ventas.xlsx")));
+    }
+
+    @Test
+    void stockExportEndpointShouldRequireOperationalContextAndReturnPdfContract() throws Exception {
+        when(reportsQueryService.getStockReport(null, null, 10L, "reportes", pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.domain.ReportFormat.PDF))
+                .thenReturn(new StockReportResponse("OPERATIONAL_CONTEXT", 10L, true, 0, java.math.BigDecimal.ZERO, List.of()));
+        when(reportExportService.exportStockToPdf(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new byte[]{4, 5, 6});
+
+        mockMvc.perform(get("/api/v1/reportes/stock/exportar")
+                        .with(user(SecurityUserPrincipal.authenticated(10L, "reportes", "REPORTES", true, List.of("reporte.exportar"))))
+                        .param("formato", "pdf")
+                        .param("operationalContextId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("reporte-stock.pdf")));
+    }
+
+    @Test
+    void utilityExportEndpointShouldRejectUnsupportedFormat() throws Exception {
+        mockMvc.perform(get("/api/v1/reportes/utilidad/exportar")
+                        .with(user(SecurityUserPrincipal.authenticated(10L, "reportes", "REPORTES", true, List.of("reporte.exportar"))))
+                        .param("formato", "csv"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0]").value("allowedFormats=xlsx,pdf"));
     }
 
     private UserEntity buildAdminUser() {
