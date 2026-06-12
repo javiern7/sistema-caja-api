@@ -6,6 +6,8 @@ import java.util.Set;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,10 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.application.OperationalDetailPdfExportService;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.presentation.BinaryFileResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application.CancelSaleUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application.CreateSaleUseCase;
@@ -51,7 +55,9 @@ public class SalesController {
     private final GetSaleDetailUseCase getSaleDetailUseCase;
     private final CancelSaleUseCase cancelSaleUseCase;
     private final ListSalesUseCase listSalesUseCase;
+    private final OperationalDetailPdfExportService operationalDetailPdfExportService;
     private final PageableFactory pageableFactory;
+    private final BinaryFileResponseFactory binaryFileResponseFactory;
     private final ApiResponseFactory responseFactory;
 
     public SalesController(
@@ -59,14 +65,18 @@ public class SalesController {
             GetSaleDetailUseCase getSaleDetailUseCase,
             CancelSaleUseCase cancelSaleUseCase,
             ListSalesUseCase listSalesUseCase,
+            OperationalDetailPdfExportService operationalDetailPdfExportService,
             PageableFactory pageableFactory,
+            BinaryFileResponseFactory binaryFileResponseFactory,
             ApiResponseFactory responseFactory
     ) {
         this.createSaleUseCase = createSaleUseCase;
         this.getSaleDetailUseCase = getSaleDetailUseCase;
         this.cancelSaleUseCase = cancelSaleUseCase;
         this.listSalesUseCase = listSalesUseCase;
+        this.operationalDetailPdfExportService = operationalDetailPdfExportService;
         this.pageableFactory = pageableFactory;
+        this.binaryFileResponseFactory = binaryFileResponseFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -88,6 +98,17 @@ public class SalesController {
         return responseFactory.success(
                 "Detalle de venta obtenido correctamente.",
                 getSaleDetailUseCase.execute(saleId)
+        );
+    }
+
+    @GetMapping("/{saleId}/exportar-pdf")
+    @PreAuthorize("hasAnyAuthority('venta.registrar', 'venta.anular')")
+    public ResponseEntity<byte[]> exportSaleDetailPdf(@PathVariable Long saleId) {
+        SaleResponse sale = getSaleDetailUseCase.execute(saleId);
+        return binaryFileResponseFactory.attachment(
+                operationalDetailPdfExportService.saleFileName(sale),
+                MediaType.APPLICATION_PDF,
+                operationalDetailPdfExportService.exportSaleDetailToPdf(sale)
         );
     }
 

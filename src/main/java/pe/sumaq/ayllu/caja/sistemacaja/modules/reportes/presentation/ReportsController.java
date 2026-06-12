@@ -9,8 +9,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +24,7 @@ import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.presentation.BinaryFileResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.GetReportHistoryUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.reportes.application.ReportExportService;
@@ -110,6 +109,7 @@ public class ReportsController {
     private final GetReportHistoryUseCase getReportHistoryUseCase;
     private final ReportExportService reportExportService;
     private final PageableFactory pageableFactory;
+    private final BinaryFileResponseFactory binaryFileResponseFactory;
     private final ApiResponseFactory responseFactory;
 
     public ReportsController(
@@ -117,12 +117,14 @@ public class ReportsController {
             GetReportHistoryUseCase getReportHistoryUseCase,
             ReportExportService reportExportService,
             PageableFactory pageableFactory,
+            BinaryFileResponseFactory binaryFileResponseFactory,
             ApiResponseFactory responseFactory
     ) {
         this.reportsQueryService = reportsQueryService;
         this.getReportHistoryUseCase = getReportHistoryUseCase;
         this.reportExportService = reportExportService;
         this.pageableFactory = pageableFactory;
+        this.binaryFileResponseFactory = binaryFileResponseFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -583,9 +585,6 @@ public class ReportsController {
     }
 
     private ResponseEntity<byte[]> buildBinaryResponse(String fileName, MediaType mediaType, byte[] content) {
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(fileName).build().toString())
-                .contentType(mediaType)
-                .body(content);
+        return binaryFileResponseFactory.attachment(fileName, mediaType, content);
     }
 }

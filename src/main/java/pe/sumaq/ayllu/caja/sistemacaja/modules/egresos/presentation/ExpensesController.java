@@ -6,6 +6,8 @@ import java.util.Set;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,10 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.application.OperationalDetailPdfExportService;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.presentation.BinaryFileResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.application.CreateExpenseUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.application.GetExpenseDetailUseCase;
@@ -45,20 +49,26 @@ public class ExpensesController {
     private final CreateExpenseUseCase createExpenseUseCase;
     private final GetExpenseDetailUseCase getExpenseDetailUseCase;
     private final ListExpensesUseCase listExpensesUseCase;
+    private final OperationalDetailPdfExportService operationalDetailPdfExportService;
     private final PageableFactory pageableFactory;
+    private final BinaryFileResponseFactory binaryFileResponseFactory;
     private final ApiResponseFactory responseFactory;
 
     public ExpensesController(
             CreateExpenseUseCase createExpenseUseCase,
             GetExpenseDetailUseCase getExpenseDetailUseCase,
             ListExpensesUseCase listExpensesUseCase,
+            OperationalDetailPdfExportService operationalDetailPdfExportService,
             PageableFactory pageableFactory,
+            BinaryFileResponseFactory binaryFileResponseFactory,
             ApiResponseFactory responseFactory
     ) {
         this.createExpenseUseCase = createExpenseUseCase;
         this.getExpenseDetailUseCase = getExpenseDetailUseCase;
         this.listExpensesUseCase = listExpensesUseCase;
+        this.operationalDetailPdfExportService = operationalDetailPdfExportService;
         this.pageableFactory = pageableFactory;
+        this.binaryFileResponseFactory = binaryFileResponseFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -80,6 +90,17 @@ public class ExpensesController {
         return responseFactory.success(
                 "Detalle de egreso obtenido correctamente.",
                 getExpenseDetailUseCase.execute(expenseId)
+        );
+    }
+
+    @GetMapping("/{expenseId}/exportar-pdf")
+    @PreAuthorize("hasAuthority('egreso.registrar')")
+    public ResponseEntity<byte[]> exportExpenseDetailPdf(@PathVariable Long expenseId) {
+        ExpenseResponse expense = getExpenseDetailUseCase.execute(expenseId);
+        return binaryFileResponseFactory.attachment(
+                operationalDetailPdfExportService.expenseFileName(expense),
+                MediaType.APPLICATION_PDF,
+                operationalDetailPdfExportService.exportExpenseDetailToPdf(expense)
         );
     }
 

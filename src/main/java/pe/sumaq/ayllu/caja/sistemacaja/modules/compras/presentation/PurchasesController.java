@@ -6,6 +6,8 @@ import java.util.Set;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,10 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.api.ApiResponseFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.application.OperationalDetailPdfExportService;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.BusinessException;
 import pe.sumaq.ayllu.caja.sistemacaja.common.exception.ErrorCode;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.pagination.PageableFactory;
+import pe.sumaq.ayllu.caja.sistemacaja.common.presentation.BinaryFileResponseFactory;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application.CancelPurchaseUseCase;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application.CreatePurchaseUseCase;
@@ -52,7 +56,9 @@ public class PurchasesController {
     private final GetPurchaseDetailUseCase getPurchaseDetailUseCase;
     private final ListPurchasesUseCase listPurchasesUseCase;
     private final CancelPurchaseUseCase cancelPurchaseUseCase;
+    private final OperationalDetailPdfExportService operationalDetailPdfExportService;
     private final PageableFactory pageableFactory;
+    private final BinaryFileResponseFactory binaryFileResponseFactory;
     private final ApiResponseFactory responseFactory;
 
     public PurchasesController(
@@ -60,14 +66,18 @@ public class PurchasesController {
             GetPurchaseDetailUseCase getPurchaseDetailUseCase,
             ListPurchasesUseCase listPurchasesUseCase,
             CancelPurchaseUseCase cancelPurchaseUseCase,
+            OperationalDetailPdfExportService operationalDetailPdfExportService,
             PageableFactory pageableFactory,
+            BinaryFileResponseFactory binaryFileResponseFactory,
             ApiResponseFactory responseFactory
     ) {
         this.createPurchaseUseCase = createPurchaseUseCase;
         this.getPurchaseDetailUseCase = getPurchaseDetailUseCase;
         this.listPurchasesUseCase = listPurchasesUseCase;
         this.cancelPurchaseUseCase = cancelPurchaseUseCase;
+        this.operationalDetailPdfExportService = operationalDetailPdfExportService;
         this.pageableFactory = pageableFactory;
+        this.binaryFileResponseFactory = binaryFileResponseFactory;
         this.responseFactory = responseFactory;
     }
 
@@ -89,6 +99,17 @@ public class PurchasesController {
         return responseFactory.success(
                 "Detalle de compra obtenido correctamente.",
                 getPurchaseDetailUseCase.execute(purchaseId)
+        );
+    }
+
+    @GetMapping("/{purchaseId}/exportar-pdf")
+    @PreAuthorize("hasAuthority('compra.registrar')")
+    public ResponseEntity<byte[]> exportPurchaseDetailPdf(@PathVariable Long purchaseId) {
+        PurchaseResponse purchase = getPurchaseDetailUseCase.execute(purchaseId);
+        return binaryFileResponseFactory.attachment(
+                operationalDetailPdfExportService.purchaseFileName(purchase),
+                MediaType.APPLICATION_PDF,
+                operationalDetailPdfExportService.exportPurchaseDetailToPdf(purchase)
         );
     }
 

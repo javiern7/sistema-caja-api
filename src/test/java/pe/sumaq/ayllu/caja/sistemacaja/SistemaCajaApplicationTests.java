@@ -24,7 +24,9 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.
 import pe.sumaq.ayllu.caja.sistemacaja.modules.cajas.infrastructure.persistence.JpaCashMovementRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auditoria.infrastructure.persistence.JpaAuditOperationRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.infrastructure.persistence.JpaPurchaseRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.presentation.dto.PurchaseResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.infrastructure.persistence.JpaExpenseRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.presentation.dto.ExpenseResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.auth.infrastructure.SecurityUserPrincipal;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.productos.infrastructure.persistence.JpaProductRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.proveedores.infrastructure.persistence.JpaProviderRepository;
@@ -41,7 +43,12 @@ import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.
 import pe.sumaq.ayllu.caja.sistemacaja.modules.stock.infrastructure.persistence.JpaStockMovementRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.JpaUserRepository;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.usuarios.infrastructure.persistence.UserEntity;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.application.GetSaleDetailUseCase;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.compras.application.GetPurchaseDetailUseCase;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.egresos.application.GetExpenseDetailUseCase;
+import pe.sumaq.ayllu.caja.sistemacaja.common.application.OperationalDetailPdfExportService;
 import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.infrastructure.persistence.JpaSaleRepository;
+import pe.sumaq.ayllu.caja.sistemacaja.modules.ventas.presentation.dto.SaleResponse;
 import pe.sumaq.ayllu.caja.sistemacaja.common.application.OperationalDataResetService;
 
 import static org.mockito.Mockito.when;
@@ -119,6 +126,18 @@ class SistemaCajaApplicationTests {
     @MockBean
     private ReportExportService reportExportService;
 
+    @MockBean
+    private OperationalDetailPdfExportService operationalDetailPdfExportService;
+
+    @MockBean
+    private GetSaleDetailUseCase getSaleDetailUseCase;
+
+    @MockBean
+    private GetPurchaseDetailUseCase getPurchaseDetailUseCase;
+
+    @MockBean
+    private GetExpenseDetailUseCase getExpenseDetailUseCase;
+
     @Test
     void contextLoads() {
     }
@@ -182,6 +201,30 @@ class SistemaCajaApplicationTests {
     @Test
     void expenseDetailEndpointShouldRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/egresos/1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void saleDetailPdfEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/ventas/1/exportar-pdf"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void purchaseDetailPdfEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/compras/1/exportar-pdf"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
+    }
+
+    @Test
+    void expenseDetailPdfEndpointShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/egresos/1/exportar-pdf"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("AUTH_INVALID_TOKEN"));
@@ -362,6 +405,60 @@ class SistemaCajaApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("reporte-stock.pdf")));
+    }
+
+    @Test
+    void saleDetailPdfEndpointShouldReturnPdfBinaryContract() throws Exception {
+        SaleResponse sale = new SaleResponse(
+                15L, 10L, "Contexto operativo", 20L, "cajero", null,
+                java.math.BigDecimal.TEN, java.math.BigDecimal.TEN, "B001", 25L,
+                null, null, null, null, null, List.of(), List.of()
+        );
+        when(getSaleDetailUseCase.execute(15L)).thenReturn(sale);
+        when(operationalDetailPdfExportService.saleFileName(sale)).thenReturn("venta-B001-25.pdf");
+        when(operationalDetailPdfExportService.exportSaleDetailToPdf(sale)).thenReturn(new byte[]{1, 2, 3});
+
+        mockMvc.perform(get("/api/v1/ventas/15/exportar-pdf")
+                        .with(user(SecurityUserPrincipal.authenticated(10L, "ventas", "VENTAS", true, List.of("venta.registrar")))))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("venta-B001-25.pdf")));
+    }
+
+    @Test
+    void purchaseDetailPdfEndpointShouldReturnPdfBinaryContract() throws Exception {
+        PurchaseResponse purchase = new PurchaseResponse(
+                18L, 10L, "Contexto operativo", 7L, "Proveedor Demo", null,
+                LocalDate.of(2026, 6, 12), "FACTURA", "F001-88", "TRANSFERENCIA",
+                java.math.BigDecimal.TEN, java.math.BigDecimal.TEN, null, null, null, null, null, List.of()
+        );
+        when(getPurchaseDetailUseCase.execute(18L)).thenReturn(purchase);
+        when(operationalDetailPdfExportService.purchaseFileName(purchase)).thenReturn("compra-F001-88.pdf");
+        when(operationalDetailPdfExportService.exportPurchaseDetailToPdf(purchase)).thenReturn(new byte[]{4, 5, 6});
+
+        mockMvc.perform(get("/api/v1/compras/18/exportar-pdf")
+                        .with(user(SecurityUserPrincipal.authenticated(10L, "compras", "COMPRAS", true, List.of("compra.registrar")))))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("compra-F001-88.pdf")));
+    }
+
+    @Test
+    void expenseDetailPdfEndpointShouldReturnPdfBinaryContract() throws Exception {
+        ExpenseResponse expense = new ExpenseResponse(
+                22L, 10L, "Contexto operativo", 5L, null, "Movilidad", "Taxi aeropuerto",
+                "EFECTIVO", java.math.BigDecimal.TEN, "Operador", null, "tesoreria",
+                LocalDate.of(2026, 6, 12), null
+        );
+        when(getExpenseDetailUseCase.execute(22L)).thenReturn(expense);
+        when(operationalDetailPdfExportService.expenseFileName(expense)).thenReturn("egreso-id-22.pdf");
+        when(operationalDetailPdfExportService.exportExpenseDetailToPdf(expense)).thenReturn(new byte[]{7, 8, 9});
+
+        mockMvc.perform(get("/api/v1/egresos/22/exportar-pdf")
+                        .with(user(SecurityUserPrincipal.authenticated(10L, "egresos", "EGRESOS", true, List.of("egreso.registrar")))))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("egreso-id-22.pdf")));
     }
 
     @Test
